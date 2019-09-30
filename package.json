@@ -1,0 +1,25 @@
+{
+  "name": "mama-ologi-backend",
+  "version": "1.0.0",
+  "description": "The backend for an e-commerce application for the Mama Ologi (Papseller) brand",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Qausim/mama_ologi_backend.git"
+  },
+  "keywords": [
+    "Pap",
+    "Ogi",
+    "Breakfast",
+    "food"
+  ],
+  "author": "Olawumi Qauzeem Yusuff",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Qausim/mama_ologi_backend/issues"
+  },
+  "homepage": "https://github.com/Qausim/mama_ologi_backend#readme"
+}
