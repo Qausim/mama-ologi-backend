@@ -1,0 +1,15 @@
+language: node_js
+node_js:
+  - "10.15.0"
+cache:
+  directories:
+    - node_modulese
+
+install:
+  - "npm ci"
+
+script:
+  - "npm test"
+
+after_success:
+  - npm run coverage
