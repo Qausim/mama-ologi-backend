@@ -2,12 +2,10 @@ import http from 'http';
 
 import express from 'express';
 import bodyParser from 'body-parser';
-import dotenv from 'dotenv';
 
 import router from './routes';
 
 
-dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -22,7 +20,7 @@ app.use((request, response, next) => {
       'PUT, POST, PATCH, DELETE, GET');
     return response.status(200).json({});
   }
-  return next();
+  next();
 });
 
 app.use('/', router);
