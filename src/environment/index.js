@@ -7,4 +7,7 @@ export default ((process) => ({
   adminEmail: process.ADMIN_EMAIL,
   adminPassword: process.ADMIN_PASSWORD,
   jwtSecret: process.JWT_SECRET,
+  cloudinaryName: process.CLOUDINARY_CLOUD_NAME,
+  cloudinaryKey: process.CLOUDINARY_API_KEY,
+  cloudinarySecret: process.CLOUDINARY_API_SECRET,
 }))(process.env);

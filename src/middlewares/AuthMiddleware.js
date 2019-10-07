@@ -1,6 +1,7 @@
 import { check, validationResult } from 'express-validator';
 
 import Responses from '../utils/responseUtils';
+import jwtUtils from '../utils/jwtUtils';
 
 
 /**
@@ -23,5 +24,18 @@ export default class AuthMiddleware {
         return next();
       },
     ];
+  }
+
+  static validateToken(request, response, next) {
+    let { headers: { authorization: token } } = request;
+    if (!token) return Responses.unauthorizedError(response, 'You need to be signed in to post a product');
+    if (token.startsWith('Bearer')) [, token] = token.split(' ');
+    try {
+      const { userId, userEmail } = jwtUtils.verifyToken(token);
+      request.user = { userId, userEmail };
+      next();
+    } catch (error) {
+      return Responses.unauthorizedError(response, 'Unauthorized operation, please sign in and try again');
+    }
   }
 }

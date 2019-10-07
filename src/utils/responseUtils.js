@@ -23,4 +23,15 @@ export default class Responses {
   static success(response, data, code = 200) {
     return response.status(code).json({ status: 'success', data });
   }
+
+  /**
+   * Defines the specification for responses in bad request cases
+   * @param {object} response
+   * @param {object} error
+   * @param {number} code
+   * @returns {object} response
+   */
+  static badRequestError(response, error, code = 400) {
+    return response.status(code).json({ status: 'error', error });
+  }
 }

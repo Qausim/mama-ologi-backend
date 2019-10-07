@@ -2,7 +2,7 @@ import { Router } from 'express';
 import swaggerUI from 'swagger-ui-express';
 
 import v1Router from './v1Routes';
-import swaggerDoc from '../swagger.json';
+import swaggerDoc from '../../swagger.json';
 
 const appRouter = Router();
 
@@ -25,7 +25,9 @@ appRouter.use((request, response, next) => {
 appRouter.use((error, request, response, next) => {
   response.status(error.status || 500).json({
     status: 'error',
-    error: error.message || 'Internal server error',
+    error: {
+      message: error.message || 'Internal server error',
+    },
   });
 });
 

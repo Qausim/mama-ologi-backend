@@ -111,7 +111,8 @@ describe(signinUrl, () => {
       expect(res.body).to.be.an('object');
       expect(res.body).to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.equal('Internal server error');
+      expect(res.body.error).to.have.key('message');
+      expect(res.body.error.message).to.equal('Internal server error');
       expect(stub.called).to.be.true;
       stub.restore();
     });

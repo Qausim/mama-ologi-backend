@@ -14,7 +14,11 @@ export default class {
    * @param {object} user
    * @returns {string} token
    */
-  static signToken({ id: userId, email: userEmail }) {
+  static generateToken({ id: userId, email: userEmail }) {
     return jwt.sign({ userId, userEmail }, jwtSecret);
+  }
+
+  static verifyToken(token) {
+    return jwt.verify(token, jwtSecret);
   }
 }
