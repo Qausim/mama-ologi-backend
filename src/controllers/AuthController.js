@@ -23,7 +23,7 @@ export default class AuthController {
       const user = users.find((el) => el.email === email);
       if (user) {
         const verified = await bcrypt.compare(password, user.password);
-        user.token = jwtUtils.signToken(user);
+        user.token = jwtUtils.generateToken(user);
         if (verified) return Responses.success(response, { ...user, password: undefined });
       }
 
