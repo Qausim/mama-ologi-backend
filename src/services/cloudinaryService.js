@@ -4,6 +4,17 @@ import cloudinary from '../config/cloudinaryConfig';
 
 
 /**
+ * Cleans a filename of it extension
+ * @param {string} imageName
+ * @returns {string} filename
+ */
+const ridImageNameOfExtension = (imageName) => {
+  const splitName = imageName.split('.');
+  return splitName.slice(0, splitName.length - 1).join('.');
+};
+
+
+/**
  * Defines functions that communicate with the Cloudinary API
  */
 export default class CloudinaryService {
@@ -20,8 +31,7 @@ export default class CloudinaryService {
       // Loop over and upload each image
       const results = productImages.map(async ({ path, originalFilename }) => {
         // Generate a unique filename using timestamp and original name without the extension
-        const splitName = originalFilename.split('.');
-        const fileName = `${splitName.slice(0, splitName.length - 1).join('.')}-${new Date().getTime()}`;
+        const fileName = `${ridImageNameOfExtension(originalFilename)}-${new Date().getTime()}`;
         const result = await cloudinary.uploader.upload(path, {
           folder: `mama-ologi/u${userId}`,
           public_id: fileName,
@@ -38,5 +48,18 @@ export default class CloudinaryService {
     } catch (error) {
       next(new Error('Error uploading images'));
     }
+  }
+
+  /**
+   * Deletes images from Cloudinary through the API using their public ids
+   * @param {array} imageUrls
+   */
+  static async deleteImages(imageUrls) {
+    const publicIds = imageUrls.map((url) => {
+      const imageDir = url.slice(url.indexOf('mama-ologi'));
+      return ridImageNameOfExtension(imageDir);
+    });
+
+    await cloudinary.api.delete_resources(publicIds);
   }
 }

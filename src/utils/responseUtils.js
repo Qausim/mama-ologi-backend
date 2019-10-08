@@ -10,7 +10,7 @@ export default class Responses {
    * @returns {object} response
    */
   static unauthorizedError(response, message, code = 401) {
-    return response.status(code).json({ status: 'error', error: message });
+    return response.status(code).json({ status: 'error', error: { message } });
   }
 
   /**
@@ -33,5 +33,31 @@ export default class Responses {
    */
   static badRequestError(response, error, code = 400) {
     return response.status(code).json({ status: 'error', error });
+  }
+
+  /**
+   * Defines the specification for responses in not found error cases
+   * @param {object} response
+   * @param {string} message
+   * @returns {object} response
+   */
+  static notFoundError(response, message) {
+    return response.status(404).json({
+      status: 'error',
+      error: { message },
+    });
+  }
+
+  /**
+   * Defines the specification for responses in not forbidden error cases
+   * @param {object} response
+   * @param {string} message
+   * @returns {object} response
+   */
+  static forbiddenError(response, message) {
+    return response.status(409).json({
+      status: 'error',
+      error: { message },
+    });
   }
 }

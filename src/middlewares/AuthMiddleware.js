@@ -28,7 +28,7 @@ export default class AuthMiddleware {
 
   static validateToken(request, response, next) {
     let { headers: { authorization: token } } = request;
-    if (!token) return Responses.unauthorizedError(response, 'You need to be signed in to post a product');
+    if (!token) return Responses.unauthorizedError(response, 'You need to be signed in to perform this operation');
     if (token.startsWith('Bearer')) [, token] = token.split(' ');
     try {
       const { userId, userEmail } = jwtUtils.verifyToken(token);
