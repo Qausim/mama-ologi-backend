@@ -49,7 +49,8 @@ describe(signinUrl, () => {
       expect(res.body).to.be.an('object');
       expect(res.body).to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.equal(signinError);
+      expect(res.body.error).to.have.key('message');
+      expect(res.body.error.message).to.equal(signinError);
     });
 
     it('should fail to log in a user with invalid password', async () => {
@@ -64,7 +65,8 @@ describe(signinUrl, () => {
       expect(res.body).to.be.an('object');
       expect(res.body).to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.equal(signinError);
+      expect(res.body.error).to.have.key('message');
+      expect(res.body.error.message).to.equal(signinError);
     });
 
     it('should fail to log in a user with incorrect email', async () => {
@@ -79,7 +81,8 @@ describe(signinUrl, () => {
       expect(res.body).to.be.an('object');
       expect(res.body).to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.equal(signinError);      
+      expect(res.body.error).to.have.key('message');
+      expect(res.body.error.message).to.equal(signinError);      
     });
 
     it('should fail to log in a user with incorrect password', async () => {
@@ -94,7 +97,8 @@ describe(signinUrl, () => {
       expect(res.body).to.be.an('object');
       expect(res.body).to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.equal(signinError);
+      expect(res.body.error).to.have.key('message');
+      expect(res.body.error.message).to.equal(signinError);
     });
 
     it('should fail due to internal server error', async () => {

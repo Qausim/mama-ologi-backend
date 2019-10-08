@@ -12,12 +12,14 @@ const { adminEmail: email, adminPassword } = envVariables;
 export default class Users {
   static async getUsers() {
     const password = await bcrypt.hash(adminPassword, 10);
-    return [{
-      id: 1,
-      email,
-      password,
-      firstName: 'Olawumi',
-      lastName: 'Yusuff',
-    }];
+    return [
+      {
+        id: 1,
+        email,
+        password,
+        firstName: 'Olawumi',
+        lastName: 'Yusuff',
+      },
+    ];
   }
 }

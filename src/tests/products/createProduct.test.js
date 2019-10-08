@@ -127,7 +127,8 @@ describe(`POST ${url}`, () => {
       expect(res.status).to.equal(401);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.be.equal('You need to be signed in to post a product');
+      expect(res.body.error).to.have.key('message');
+      expect(res.body.error.message).to.be.equal('You need to be signed in to perform this operation');
     });
 
     it('should fail to create a product when invalid token supplied', async () => {
@@ -145,7 +146,8 @@ describe(`POST ${url}`, () => {
       expect(res.status).to.equal(401);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.be.equal('Unauthorized operation, please sign in and try again');
+      expect(res.body.error).to.have.key('message');
+      expect(res.body.error.message).to.be.equal('Unauthorized operation, please sign in and try again');
     });
 
     it('should fail to create a product without a title field', async () => {

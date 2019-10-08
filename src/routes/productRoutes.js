@@ -13,5 +13,7 @@ productRouter.post('/', AuthMiddleware.validateToken, multipartMiddleware,
   ...ProductMiddleware.validateProductData(), ProductMiddleware.processImages,
   ProductController.addProduct);
 
+productRouter.delete('/:productId', AuthMiddleware.validateToken, ProductController.deleteProduct);
+
 
 export default productRouter;
