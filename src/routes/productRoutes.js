@@ -15,11 +15,13 @@ productRouter.post('/', AuthMiddleware.validateToken, multipartMiddleware,
 
 productRouter.get('/', ProductController.getProducts);
 
-productRouter.delete('/:productId', AuthMiddleware.validateToken, ProductMiddleware.validateProductExists,
+productRouter.get('/:productId', ProductMiddleware.verifyProductExists, ProductController.getProduct);
+
+productRouter.delete('/:productId', AuthMiddleware.validateToken, ProductMiddleware.verifyProductExists,
   ProductMiddleware.validateUserCanOperateProduct, ProductController.deleteProduct);
 
 productRouter.patch('/:productId', AuthMiddleware.validateToken, multipartMiddleware,
-  ProductMiddleware.validateProductExists, ProductMiddleware.validateUserCanOperateProduct,
+  ProductMiddleware.verifyProductExists, ProductMiddleware.validateUserCanOperateProduct,
   ...ProductMiddleware.validateProductUpdateData(), ProductMiddleware.processImages,
   ProductController.updateProduct);
 
