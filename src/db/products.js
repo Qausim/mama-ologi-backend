@@ -23,9 +23,12 @@ let products = [
 export default class Products {
   /**
    * Retrieves the existing products
+   * @param {number} page
    * @returns {Promise - array} products
    */
-  static async getProducts() {
+  static async getProducts(page) {
+    const perPage = 10;
+    if (page) return products.slice((page - 1) * perPage, page * perPage - 1);
     return [...products];
   }
 
