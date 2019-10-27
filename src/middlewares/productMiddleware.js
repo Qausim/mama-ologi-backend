@@ -1,7 +1,9 @@
 /* eslint-disable newline-per-chained-call */
-import { body, oneOf, validationResult } from 'express-validator';
+import { validationResult } from 'express-validator';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
+import Products from '../db/products';
+import { createProductValidations, updateProductValidations } from '../validation/productValidation';
 
 
 /**
@@ -12,15 +14,9 @@ export default class ProductMiddlware {
    * Validates request data to create a new product
    * @returns {array}
    */
-  static validateProductData() {
+  static validateCreateProductData() {
     return [
-      oneOf([body('title').trim().isString().isLength({ min: 6 })],
-        'Please enter a valid title for the product (at least 6 characters)'),
-      body('price').trim().isNumeric().withMessage('Please enter a valid price (numeric) for the product'),
-      body('priceDenomination').trim().isIn(['NGN', 'USD']).withMessage('Please choose a denomination for the price'),
-      body('weight').trim().isNumeric().withMessage('Please enter a valid weight (numeric) value for the product'),
-      body('weightUnit').trim().isIn(['kg', 'g']).withMessage('Please choose unit for the weight, "g" or "kg"'),
-      body('description').trim().not().isEmpty().withMessage("Please provide the product's description"),
+      ...Object.values(createProductValidations),
       (request, response, next) => {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
@@ -43,7 +39,7 @@ export default class ProductMiddlware {
    * @param {object} response
    * @param {callback} next
    */
-  static processImages(request, response, next) {
+  static async processImages(request, response, next) {
     let { productImages } = request.files;
     // If no images proceed to the controller
     if (!(productImages)) return next();
@@ -53,12 +49,77 @@ export default class ProductMiddlware {
     if (productImages.length > 4) return Responses.badRequestError(response, { message: 'Maximum of 4 image files allowed' });
     // If there's a file type other than "jpeg" or "png", or greater than 2mb, terminate the request
     const wrongFormatOrTooHeavy = productImages.find(({ type, size }) => !['image/jpeg', 'image/png'].includes(type)
-      || size > 2 * 1024 * 1024);
+    || size > 2 * 1024 * 1024);
 
     if (wrongFormatOrTooHeavy) {
       return Responses.badRequestError(response, { message: 'Only jpeg and png images, each not greater than 2mb, are allowed' });
     }
+    // Delete existing images if new images
+    if (request.product && request.product.images.length) {
+      await CloudinaryService.deleteImages(request.product.images);
+    }
 
     CloudinaryService.uploadImages(request, productImages, next);
+  }
+
+  /**
+   * Checks if a requested product exists or not
+   * @param {object} request
+   * @param {object} response
+   * @param {callback} next
+   * @returns {object|undefined} response or undefined
+   */
+  static async validateProductExists(request, response, next) {
+    const { productId } = request.params;
+    try {
+      // Ensure the product exists else return a 404 error
+      const product = await Products.getProduct(productId);
+      if (!product) return Responses.notFoundError(response, 'Product not found');
+      // If product exists attach it to the request object and proceed
+      request.product = product;
+      next();
+    } catch (error) {
+      next(new Error('Internal server error'));
+    }
+  }
+
+  /**
+   * Validates that the requesting user has the permission to carry out an operation on a product
+   * @param {object} request
+   * @param {object} response
+   * @param {callback} next
+   * @returns {object|undefined} response or undefined
+   */
+  static validateUserCanOperateProduct(request, response, next) {
+    const { user: { userId }, product } = request;
+    // Ensure the user has permission to delete the product (this may feel unnecessary now but
+    // preparing for when there'll be need to scale)
+    if (product.ownerId !== userId) {
+      return Responses.forbiddenError(response, 'You are not permitted to perform this operation on the product');
+    }
+    next();
+  }
+
+  /**
+   * Validates request data to update a product
+   * @returns {array}
+   */
+  static validateProductUpdateData() {
+    return [
+      ...Object.values(updateProductValidations),
+      (request, response, next) => {
+        const errors = validationResult(request);
+        if (!errors.isEmpty()) {
+          const error = errors.errors.map((el) => {
+            let key;
+            if (el.nestedErrors) key = el.nestedErrors[0].param;
+            else key = el.param;
+            return ({ [key]: el.msg });
+          });
+          return Responses.badRequestError(response, error);
+        }
+        next();
+      },
+    ];
   }
 }
