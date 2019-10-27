@@ -106,4 +106,8 @@ export default class ProductController {
       next(new Error());
     }
   }
+
+  static async getProduct(request, response) {
+    return Responses.success(response, request.product);
+  }
 }

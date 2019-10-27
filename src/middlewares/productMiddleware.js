@@ -69,7 +69,7 @@ export default class ProductMiddlware {
    * @param {callback} next
    * @returns {object|undefined} response or undefined
    */
-  static async validateProductExists(request, response, next) {
+  static async verifyProductExists(request, response, next) {
     const { productId } = request.params;
     try {
       // Ensure the product exists else return a 404 error
@@ -79,7 +79,7 @@ export default class ProductMiddlware {
       request.product = product;
       next();
     } catch (error) {
-      next(new Error('Internal server error'));
+      next(new Error());
     }
   }
 
