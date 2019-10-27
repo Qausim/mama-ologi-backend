@@ -1,7 +1,8 @@
-import { check, validationResult } from 'express-validator';
+import { validationResult } from 'express-validator';
 
 import Responses from '../utils/responseUtils';
 import jwtUtils from '../utils/jwtUtils';
+import authValidation from '../validation/authValidation';
 
 
 /**
@@ -14,8 +15,8 @@ export default class AuthMiddleware {
    */
   static validateSigninFields() {
     return [
-      check('email').isEmail(),
-      check('password').isString().isLength({ min: 8 }),
+      authValidation.email,
+      authValidation.password,
       (request, response, next) => {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {

@@ -26,7 +26,7 @@ export default class Products {
    * @returns {Promise - array} products
    */
   static async getProducts() {
-    return products;
+    return [...products];
   }
 
   /**
@@ -38,7 +38,7 @@ export default class Products {
     // eslint-disable-next-line no-param-reassign
     product.id = products.length ? products[products.length - 1].id + 1 : 1;
     products.push(product);
-    return product;
+    return { ...product };
   }
 
   /**
@@ -47,7 +47,8 @@ export default class Products {
    * @returns {object} product
    */
   static async getProduct(productId) {
-    return products.find((product) => product.id == productId);
+    const product = products.find((el) => el.id == productId);
+    return product ? { ...product } : product;
   }
 
   /**
@@ -56,5 +57,22 @@ export default class Products {
    */
   static async deleteProduct(productId) {
     products = products.filter((product) => product.id != productId);
+  }
+
+  /**
+   * Updates a product
+   * @param {number} productId
+   */
+  static async updateProduct(productId, product, updatedProduct) {
+    const productIndex = products.findIndex((el) => el.id == productId);
+    const clonedProduct = { ...product };
+    Object.entries(updatedProduct).forEach(([key, value]) => {
+      if (['weight', 'price'].includes(key)) clonedProduct[key].value = value;
+      else if (key === 'priceDenomination') clonedProduct.price.denomination = value;
+      else if (key === 'weightUnit') clonedProduct.weight.unit = value;
+      else clonedProduct[key] = value;
+    });
+    products[productIndex] = clonedProduct;
+    return clonedProduct;
   }
 }

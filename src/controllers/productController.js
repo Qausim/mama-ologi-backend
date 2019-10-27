@@ -42,17 +42,9 @@ export default class ProductController {
    * @returns {object} response
    */
   static async deleteProduct(request, response, next) {
-    const { userId } = request.user;
+    const { product } = request;
     const { productId } = request.params;
     try {
-      // Ensure the product exists else return a 404 error
-      const product = await Products.getProduct(productId);
-      if (!product) return Responses.notFoundError(response, 'Product not found');
-      // Ensure the user has permission to delete the product (this may feel unnecessary now but
-      // preparing for when there'll be need to scale)
-      if (product.ownerId !== userId) {
-        return Responses.forbiddenError(response, 'You are not permitted to delete the product');
-      }
       // If there are images delete them from the third party service
       if (product.images.length) await CloudinaryService.deleteImages(product.images);
 
@@ -60,7 +52,33 @@ export default class ProductController {
       await Products.deleteProduct(productId);
       return Responses.success(response, { message: `"${product.title}" successfully deleted` });
     } catch (error) {
-      next(new Error('Internal server error'));
+      next(new Error());
+    }
+  }
+
+  /**
+   * @param {object} request
+   * @param {object} response
+   * @param {callback} next
+   * @returns {object} product
+   */
+  static async updateProduct(request, response, next) {
+    const { productId } = request.params;
+    const expectedFields = [
+      'title', 'price', 'priceDenomination', 'weight', 'weightUnit', 'description', 'images',
+    ];
+    const cleanedData = {};
+
+    try {
+      expectedFields.forEach((field) => {
+        const value = request.body[field];
+        if (value) cleanedData[field] = typeof value === 'string' ? value.trim() : value;
+      });
+
+      const product = await Products.updateProduct(productId, request.product, cleanedData);
+      return Responses.success(response, product);
+    } catch (error) {
+      next(new Error());
     }
   }
 }

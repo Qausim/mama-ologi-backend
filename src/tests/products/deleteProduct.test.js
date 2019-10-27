@@ -216,7 +216,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
         expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
         expect(res.body.status).to.equal('error');
         expect(res.body.error).to.be.an('object').and.to.have.keys('message');
-        expect(res.body.error.message).to.equal('You are not permitted to delete the product');
+        expect(res.body.error.message).to.equal('You are not permitted to perform this operation on the product');
         expect(cloudApiDeleterStub.called).to.be.false;
     });
 
