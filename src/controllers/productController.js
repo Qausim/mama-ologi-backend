@@ -81,4 +81,29 @@ export default class ProductController {
       next(new Error());
     }
   }
+
+  /**
+   * Retrieves all existing products in the database
+   * @param {object} request
+   * @param {object} response
+   * @param {callback} next
+   */
+  static async getProducts(request, response, next) {
+    let { query: { page } } = request;
+    if (page) {
+      page = parseInt(page, 10);
+      if (!page || page <= 0) {
+        return Responses.badRequestError(response, {
+          message: 'Query parameter value for "page" must be a number greater than zero',
+        });
+      }
+    } else page = 1;
+
+    try {
+      const products = await Products.getProducts(page);
+      return Responses.success(response, products);
+    } catch (error) {
+      next(new Error());
+    }
+  }
 }
