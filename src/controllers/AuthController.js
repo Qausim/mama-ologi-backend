@@ -19,9 +19,9 @@ export default class AuthController {
   static async signin(request, response, next) {
     try {
       const { body: { email, password } } = request;
-      const users = await Users.getUsers();
-      const user = users.find((el) => el.email === email);
-      if (user) {
+      const userRes = await Users.getUser(email);
+      if (userRes.rowCount) {
+        const { rows: [user] } = userRes;
         const verified = await bcrypt.compare(password, user.password);
         user.token = jwtUtils.generateToken(user);
         if (verified) return Responses.success(response, { ...user, password: undefined });

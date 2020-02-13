@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+
 export default ((process) => ({
   environtment: process.NODE_ENV,
   adminEmail: process.ADMIN_EMAIL,
@@ -10,4 +11,5 @@ export default ((process) => ({
   cloudinaryName: process.CLOUDINARY_CLOUD_NAME,
   cloudinaryKey: process.CLOUDINARY_API_KEY,
   cloudinarySecret: process.CLOUDINARY_API_SECRET,
+  dbConnectionString: process.DB_CONNECTION_STRING,
 }))(process.env);
