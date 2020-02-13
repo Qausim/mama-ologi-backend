@@ -102,7 +102,7 @@ describe(signinUrl, () => {
     });
 
     it('should fail due to internal server error', async () => {
-      const stub = sinon.stub(Users, 'getUsers').throws(new Error());
+      const stub = sinon.stub(Users, 'getUser').throws(new Error());
 
       const res = await chai.request(app)
         .post(signinUrl)

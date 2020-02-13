@@ -15,6 +15,12 @@ describe('Sample test', () => {
     expect(res.status).to.equal(200);
   });
 
+  it('should send options to increase covergage', async () => {
+    await chai.request(app)
+      .options('/')
+      .send();
+  });
+
   it('should return 404', async () => {
     const res = await chai.request(app)
       .get('/someweirdroute')

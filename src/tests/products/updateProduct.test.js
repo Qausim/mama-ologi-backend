@@ -7,6 +7,7 @@ import jwtUtils from '../../utils/jwtUtils';
 import Users from '../../db/users';
 import Products from '../../db/products';
 import cloudinary from '../../config/cloudinaryConfig';
+import envVariables from '../../environment';
 
 
 chai.use(chaiHttp);
@@ -15,52 +16,50 @@ const baseUrl = '/api/v1/products';
 const splittedDir = __dirname.replace(/[\\]/g, '/').split('/');
 const testImagesDir = `${splittedDir.slice(0, splittedDir.length - 3).join('/')}/testImages`;
 const fakeCloudinaryBaseUrl = 'https://res.cloudinary.com/qausim/image/upload/v1';
+const { adminEmail } = envVariables;
 let product;
 let productWithImages;
 let userToken;
 let user;
 
 before((done) => {
-  Users.getUsers()
-    .then((res) => {
-      [user] = res;
+  Users.getUser(adminEmail)
+    .then(({ rows }) => {
+      [user] = rows;
       userToken = jwtUtils.generateToken(user);
 
       return Products.addProduct({
-        title: 'fake pap',
-        ownerId: user.id,
-        price: {
-          value: '1900',
-          denomination: 'USD',
+        body: {
+          title: 'fake pap',
+          ownerId: user.id,
+          price: '1900',
+          priceDenomination: 'USD',
+          weight: (20).toFixed(2),
+          weightUnit: 'g',
+          description: 'This is fake! You heard?! This is fake!!!',
+          images: []
         },
-        weight: {
-          value: 20,
-          unit: 'g',
-        },
-        description: 'This is fake! You heard?! This is fake!!!',
-        images: []
+        user: { userId: user.id }
       });
     })
-    .then((res) => {
-      product = res;
-
+    .then(({ rows }) => {
+      product = rows[0];
       return Products.addProduct({
-        title: 'fake pap with images',
-        ownerId: user.id,
-        price: {
-          value: '1900',
-          denomination: 'USD',
+        body: {
+          title: 'fake pap with images',
+          ownerId: user.id,
+          price: '1900',
+          priceDenomination: 'USD',
+          weight: (20).toFixed(2),
+          weightUnit: 'g',
+          description: 'This is fake! You heard?! This is fake!!!',
+          images: ['fake-image1.png', 'fake-image2.png'],
         },
-        weight: {
-          value: 20,
-          unit: 'g',
-        },
-        description: 'This is fake! You heard?! This is fake!!!',
-        images: ['fake-image1.png', 'fake-image2.png'],
+        user: { userId: user.id }
       });
     })
-    .then((res) => {
-      productWithImages = res;
+    .then(({ rows }) => {
+      productWithImages = rows[0];
       done();
     })
     .catch((e) => done(e));
@@ -100,14 +99,14 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
       expect(res.body.data.title).to.equal(newTitle);
       expect(res.body.data.id).to.equal(product.id);
     });
 
     it('should update the price of a product', async () => {
-      const newPrice = '120.5';
+      const newPrice = (120.5).toFixed(2);
       const res = await chai.request(app)
         .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', `Bearer ${userToken}`)
@@ -117,9 +116,29 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
-      expect(res.body.data.price.value).to.equal(newPrice);
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.price).to.equal(newPrice);
+      expect(res.body.data.id).to.equal(product.id);
+    });
+
+    it('should update the title and price of a product', async () => {
+      const newTitle = 'updated title for fake pap the second time';
+      const newPrice = (130.5).toFixed(2);
+      const res = await chai.request(app)
+        .patch(`${baseUrl}/${product.id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .set('Content-Type', 'multipart/form-data')
+        .field('title', newTitle)
+        .field('price', newPrice);
+
+      expect(res.status).to.equal(200);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
+      expect(res.body.status).to.equal('success');
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.title).to.equal(newTitle);
+      expect(res.body.data.price).to.equal(newPrice);
       expect(res.body.data.id).to.equal(product.id);
     });
 
@@ -134,14 +153,14 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
-      expect(res.body.data.price.denomination).to.equal(newDenomination);
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.price_denomination).to.equal(newDenomination);
       expect(res.body.data.id).to.equal(product.id);
     });
 
     it('should update the weight of a product', async () => {
-      const newWeight = '50';
+      const newWeight = (50).toFixed(2);
       const res = await chai.request(app)
         .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', `Bearer ${userToken}`)
@@ -151,9 +170,9 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
-      expect(res.body.data.weight.value).to.equal(newWeight);
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.weight).to.equal(newWeight);
       expect(res.body.data.id).to.equal(product.id);
     });
 
@@ -168,9 +187,9 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
-      expect(res.body.data.weight.unit).to.equal(newWeightUnit);
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.weight_unit).to.equal(newWeightUnit);
       expect(res.body.data.id).to.equal(product.id);
     });
 
@@ -185,8 +204,8 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
       expect(res.body.data.description).to.equal(newDescription);
       expect(res.body.data.id).to.equal(product.id);
     });
@@ -201,8 +220,8 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
       expect(res.body.data.images).to.have.length(1);
       res.body.data.images.forEach((img) => {
         expect(img).to.be.a('string').and.satisfy((url) => url.startsWith(fakeCloudinaryBaseUrl) && url.includes('camera'));

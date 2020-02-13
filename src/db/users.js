@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 
 import envVariables from '../environment';
+import dbConnection from './dbConnection';
+import { userTableName, roleTableName } from './migration';
 
 
 const { adminEmail: email, adminPassword } = envVariables;
@@ -21,5 +23,11 @@ export default class Users {
         lastName: 'Yusuff',
       },
     ];
+  }
+
+  static async getUser(userEmail) {
+    return dbConnection.dbConnect(
+      `SELECT * FROM ${userTableName} LEFT JOIN ${roleTableName} ON ${userTableName}.role_id = ${roleTableName}.id WHERE email = $1`, [userEmail],
+    );
   }
 }

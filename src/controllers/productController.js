@@ -1,6 +1,7 @@
 import Products from '../db/products';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
+import { productTableName } from '../db/migration';
 
 /**
  * Defines the controllers for the /products endpoint
@@ -13,21 +14,9 @@ export default class ProductController {
    * @param {callback} next
    */
   static async addProduct(request, response, next) {
-    const {
-      title, price, priceDenomination, weight, weightUnit, description, images,
-    } = request.body;
-    const { userId: ownerId } = request.user;
-    const newProduct = {
-      ownerId,
-      title: title.trim(),
-      price: { value: price.trim(), denomination: priceDenomination.trim() },
-      weight: { value: weight.trim(), unit: weightUnit.trim() },
-      description: description.trim(),
-      images: images || [],
-    };
-
     try {
-      const product = await Products.addProduct(newProduct);
+      const insertRes = await Products.addProduct(request);
+      const { rows: [product] } = insertRes;
       Responses.success(response, product, 201);
     } catch (error) {
       next(new Error());
@@ -67,16 +56,31 @@ export default class ProductController {
     const expectedFields = [
       'title', 'price', 'priceDenomination', 'weight', 'weightUnit', 'description', 'images',
     ];
-    const cleanedData = {};
+    const body = [];
+    expectedFields.forEach((field) => {
+      const value = request.body[field];
+      if (value) {
+        // eslint-disable-next-line no-nested-ternary
+        const key = field === 'priceDenomination' ? 'price_denomination' : field === 'weightUnit' ? 'weight_unit' : field;
+        body.push([
+          key, typeof value === 'string' ? value.trim() : value,
+        ]);
+      }
+    });
+
+    let preparedQuery = '';
+    const preparedData = [];
+    body.forEach(([key, value], index) => {
+      preparedQuery += `${key} = $${index + 1}`;
+      preparedQuery += index === body.length - 1 ? ' ' : ', ';
+      preparedData.push(value);
+    });
+    preparedQuery = `UPDATE ${productTableName} SET ${preparedQuery}WHERE id = $${preparedData.length + 1} RETURNING *`;
+    preparedData.push(productId);
 
     try {
-      expectedFields.forEach((field) => {
-        const value = request.body[field];
-        if (value) cleanedData[field] = typeof value === 'string' ? value.trim() : value;
-      });
-
-      const product = await Products.updateProduct(productId, request.product, cleanedData);
-      return Responses.success(response, product);
+      const res = await Products.updateProduct(preparedQuery, preparedData);
+      return Responses.success(response, res.rows[0]);
     } catch (error) {
       next(new Error());
     }
@@ -92,7 +96,7 @@ export default class ProductController {
     let { query: { page } } = request;
     if (page) {
       page = parseInt(page, 10);
-      if (!page || page <= 0) {
+      if (Number.isNaN(page) || page <= 0) {
         return Responses.badRequestError(response, {
           message: 'Query parameter value for "page" must be a number greater than zero',
         });
@@ -100,7 +104,8 @@ export default class ProductController {
     } else page = 1;
 
     try {
-      const products = await Products.getProducts(page);
+      const res = await Products.getProducts(page);
+      const { rows: products } = res;
       return Responses.success(response, products);
     } catch (error) {
       next(new Error());

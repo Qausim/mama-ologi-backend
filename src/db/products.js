@@ -1,21 +1,6 @@
-/* eslint-disable eqeqeq */
-let products = [
-  {
-    id: 1,
-    ownerId: 1,
-    title: 'Yam pepper pap',
-    price: {
-      value: '1200',
-      denomination: 'NGN',
-    },
-    weight: {
-      value: 50,
-      unit: 'kg',
-    },
-    description: 'Healthy energetic and blesses your day',
-    images: ['image1.png', 'image2.jpg'],
-  },
-];
+import dbConnection from './dbConnection';
+import { productTableName } from './migration';
+
 
 /**
  * Mimics a real life db table of products
@@ -27,9 +12,8 @@ export default class Products {
    * @returns {Promise - array} products
    */
   static async getProducts(page) {
-    const perPage = 10;
-    if (page) return products.slice((page - 1) * perPage, page * perPage - 1);
-    return [...products];
+    const perPage = page ? page * 10 : 10;
+    return dbConnection.dbConnect(`SELECT * FROM ${productTableName} OFFSET $1 LIMIT 10`, [perPage]);
   }
 
   /**
@@ -37,11 +21,25 @@ export default class Products {
    * @param {object} product
    * @returns {Promise - object} product
    */
-  static async addProduct(product) {
-    // eslint-disable-next-line no-param-reassign
-    product.id = products.length ? products[products.length - 1].id + 1 : 1;
-    products.push(product);
-    return { ...product };
+  static async addProduct(request) {
+    let {
+      title, price, priceDenomination, weight, weightUnit, description, images,
+    } = request.body;
+    [title, price, priceDenomination, weight, weightUnit, description, images] = [
+      title, price, priceDenomination, weight, weightUnit, description, images,
+    ].map((value) => {
+      if (typeof value === 'string') return value.trim();
+      return value;
+    });
+    const { userId: ownerId } = request.user;
+    images = images || [];
+
+    return dbConnection.dbConnect(
+      `INSERT INTO ${productTableName} (
+        owner_id, title, price, price_denomination, weight, weight_unit, description, images
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [ownerId, title, price, priceDenomination, weight, weightUnit, description, images],
+    );
   }
 
   /**
@@ -50,8 +48,7 @@ export default class Products {
    * @returns {object} product
    */
   static async getProduct(productId) {
-    const product = products.find((el) => el.id == productId);
-    return product ? { ...product } : product;
+    return dbConnection.dbConnect(`SELECT * FROM ${productTableName} WHERE id = $1`, [productId]);
   }
 
   /**
@@ -59,23 +56,14 @@ export default class Products {
    * @param {number} productId
    */
   static async deleteProduct(productId) {
-    products = products.filter((product) => product.id != productId);
+    return dbConnection.dbConnect(`DELETE FROM ${productTableName} WHERE id = $1`, [productId]);
   }
 
   /**
    * Updates a product
    * @param {number} productId
    */
-  static async updateProduct(productId, product, updatedProduct) {
-    const productIndex = products.findIndex((el) => el.id == productId);
-    const clonedProduct = { ...product };
-    Object.entries(updatedProduct).forEach(([key, value]) => {
-      if (['weight', 'price'].includes(key)) clonedProduct[key].value = value;
-      else if (key === 'priceDenomination') clonedProduct.price.denomination = value;
-      else if (key === 'weightUnit') clonedProduct.weight.unit = value;
-      else clonedProduct[key] = value;
-    });
-    products[productIndex] = clonedProduct;
-    return clonedProduct;
+  static async updateProduct(query, data) {
+    return dbConnection.dbConnect(query, data);
   }
 }

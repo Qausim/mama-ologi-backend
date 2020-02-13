@@ -7,12 +7,13 @@
     "lint": "eslint ./src --fix",
     "start": "node build/",
     "build": "npm run clean && babel src -d build src/ -s",
-    "test": "export NODE_ENV=test || SET \"NODE_ENV=test\" && nyc mocha -r @babel/polyfill -r @babel/core -r @babel/register --recursive src/tests --timeout 3000 --exit",
+    "test": "NODE_ENV=test npm run migration && nyc mocha -r @babel/polyfill -r @babel/core -r @babel/register --recursive src/tests --timeout 3000 --exit && npm run undo:migration",
     "serve": "babel-node src/",
     "coverage": "nyc --reporter=lcov --reporter=text-lcov npm test && nyc report --reporter=text-lcov | coveralls",
     "start:dev": "nodemon --exec babel-node src/index.js",
     "clean": "rimraf ./build",
-    "testRun": "babel-node ./src/db/users.js"
+    "migration": "babel-node src/db/migration.js",
+    "undo:migration": "babel-node src/db/undoMigration.js"
   },
   "repository": {
     "type": "git",
@@ -46,6 +47,7 @@
     "jsonwebtoken": "^8.5.1",
     "passport": "^0.4.0",
     "passport-google-oauth20": "^2.0.0",
+    "pg": "^7.14.0",
     "sinon": "^7.5.0",
     "swagger-ui-express": "^4.1.1"
   },

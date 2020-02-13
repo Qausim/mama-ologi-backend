@@ -73,9 +73,10 @@ export default class ProductMiddlware {
     const { productId } = request.params;
     try {
       // Ensure the product exists else return a 404 error
-      const product = await Products.getProduct(productId);
-      if (!product) return Responses.notFoundError(response, 'Product not found');
+      const res = await Products.getProduct(productId);
+      if (!res.rowCount) return Responses.notFoundError(response, 'Product not found');
       // If product exists attach it to the request object and proceed
+      const { rows: [product] } = res;
       request.product = product;
       next();
     } catch (error) {
@@ -94,7 +95,7 @@ export default class ProductMiddlware {
     const { user: { userId }, product } = request;
     // Ensure the user has permission to delete the product (this may feel unnecessary now but
     // preparing for when there'll be need to scale)
-    if (product.ownerId !== userId) {
+    if (product.owner_id !== userId) {
       return Responses.forbiddenError(response, 'You are not permitted to perform this operation on the product');
     }
     next();

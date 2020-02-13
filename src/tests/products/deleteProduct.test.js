@@ -7,18 +7,20 @@ import app from '../..';
 import Products from '../../db/products';
 import jwtUtils from '../../utils/jwtUtils';
 import Users from '../../db/users';
+import envVariables from '../../environment';
 
 
 chai.use(chaiHttp);
 const { expect } = chai;
 const baseUrl = '/api/v1/products';
+const { adminEmail } = envVariables;
 let user;
 let userToken;
 
 before((done) => {
-  Users.getUsers()
-    .then((res) => {
-      [user] = res;
+  Users.getUser(adminEmail)
+    .then(({ rows }) => {
+      [user] = rows;
       userToken = jwtUtils.generateToken(user);
       done();
     })
@@ -34,38 +36,36 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
     // Insert an image without images and one with images, and stub Cloudinary API before all tests
     before((done) => {
       Products.addProduct({
-        title: 'fake pap',
-        ownerId: user.id,
-        price: {
-          value: '1900',
-          denomination: 'USD',
-        },
-        weight: {
-          value: 20,
-          unit: 'g',
-        },
-        description: 'This is fake! You heard?! This is fake!!!',
-        images: []
-      })
-      .then((res) => {
-        product = res;
-        return Products.addProduct({
-          title: 'fake pap with images',
+        body: {
+          title: 'fake pap',
           ownerId: user.id,
-          price: {
-            value: '1900',
-            denomination: 'USD',
-          },
-          weight: {
-            value: 20,
-            unit: 'g',
-          },
+          price: '1900',
+          priceDenomination: 'USD',
+          weight: 20,
+          weightUnit: 'g',
           description: 'This is fake! You heard?! This is fake!!!',
-          images: ['fake-image1.png', 'fake-image2.png'],
-        })
+          images: []
+        },
+        user: { userId: user.id }
       })
-      .then((res) => {
-        productWithImages = res;
+      .then(({ rows }) => {
+        product = rows[0];
+        return Products.addProduct({
+          body: {
+            title: 'fake pap with images',
+            ownerId: user.id,
+            price: '1900',
+            priceDenomination: 'USD',
+            weight: 20,
+            weightUnit: 'g',
+            description: 'This is fake! You heard?! This is fake!!!',
+            images: ['fake-image1.png', 'fake-image2.png'],
+          },
+          user: { userId: user.id }
+        });
+      })
+      .then(({ rows }) => {
+        productWithImages = rows[0];
         cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').resolves('done');
         done();
       })
@@ -116,42 +116,40 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
     // Insert an image without images and one with images, and stub Cloudinary API before all tests
     before((done) => {
       Products.addProduct({
-        title: 'fake pap',
-        ownerId: user.id,
-        price: {
-          value: '1900',
-          denomination: 'USD',
-        },
-        weight: {
-          value: 20,
-          unit: 'g',
-        },
-        description: 'This is fake! You heard?! This is fake!!!',
-        images: []
-      })
-      .then((res) => {
-        product = res;
-        return Products.addProduct({
-          title: 'fake pap with images',
+        body: {
+          title: 'fake pap',
           ownerId: user.id,
-          price: {
-            value: '1900',
-            denomination: 'USD',
-          },
-          weight: {
-            value: 20,
-            unit: 'g',
-          },
+          price: '1900',
+          priceDenomination: 'USD',
+          weight: 20,
+          weightUnit: 'g',
           description: 'This is fake! You heard?! This is fake!!!',
-          images: ['fake-image1.png', 'fake-image2.png'],
+          images: []
+        },
+        user: { userId: user.id }
+      })
+        .then(({ rows }) => {
+          product = rows[0];
+          return Products.addProduct({
+            body: {
+              title: 'fake pap with images',
+              ownerId: user.id,
+              price: '1900',
+              priceDenomination: 'USD',
+              weight: 20,
+              weightUnit: 'g',
+              description: 'This is fake! You heard?! This is fake!!!',
+              images: ['fake-image1.png', 'fake-image2.png'],
+            },
+            user: { userId: user.id }
+          });
         })
-      })
-      .then((res) => {
-        productWithImages = res;
-        cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').throws(new Error('Unable to delete images'));
-        done();
-      })
-      .catch((e) => done(e));
+        .then(({ rows }) => {
+          productWithImages = rows[0];
+          cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').throws(new Error('Unable to delete images'));
+          done();
+        })
+        .catch((e) => done(e));
     });
 
     // Delete inserted test products from db and restore Cloudinary API default behaviour after all tests

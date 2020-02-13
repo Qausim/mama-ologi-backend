@@ -4,6 +4,8 @@ import sinon from 'sinon';
 
 import app from '../..';
 import Products from '../../db/products';
+import dbConnection from '../../db/dbConnection';
+import { selectAdminId, insertProductQuery } from '../../db/migration';
 
 
 const { expect } = chai;
@@ -12,16 +14,20 @@ const baseUrl = '/api/v1/products';
 let product;
 
 before((done) => {
-  Products.getProducts()
-    .then((products) => {
-      [product, ] = products;
-      done();
+  dbConnection.dbConnect(selectAdminId)
+    .then(({ rows: [{ id }] }) => dbConnection.dbConnect(insertProductQuery, [id]))
+    .then(({ rows }) => {
+      if (rows.length) {
+        product = rows[0];
+        return done();
+      }
+      throw new Error('No product found');
     })
     .catch((e) => done(e));
 });
 
 
-describe(`GET ${baseUrl}`, () => {
+describe(`GET ${baseUrl}/:productId`, () => {
   describe('SUCCESS', () => {
     it('should get a single product', async () => {
       const res = await chai.request(app)
@@ -32,16 +38,13 @@ describe(`GET ${baseUrl}`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
-      expect(res.body.data.id).to.be.a('number');
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'price_denomination',
+      'weight', 'weight_unit', 'description', 'images');
       expect(res.body.data.description).to.be.a('string');
-      expect(res.body.data.price).to.be.an('object').and.to.have.keys('value', 'denomination');
-      expect(res.body.data.price.value).to.equal(product.price.value);
-      expect(res.body.data.price.denomination).to.equal(product.price.denomination);
-      expect(res.body.data.weight).to.be.an('object').and.to.have.keys('value', 'unit');
-      expect(res.body.data.weight.value).to.equal(product.weight.value);
-      expect(res.body.data.weight.unit).to.equal(product.weight.unit);
+      expect(res.body.data.price).to.be.a('string').and.to.equal(product.price);
+      expect(res.body.data.price_denomination).to.equal(product.price_denomination);
+      expect(res.body.data.weight).to.equal(product.weight);
+      expect(res.body.data.weight_unit).to.equal(product.weight_unit);
       expect(res.body.data.images).to.be.an('array').and.to.have.length(product.images.length);
     });
   });

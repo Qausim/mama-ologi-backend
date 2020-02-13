@@ -16,9 +16,9 @@ const user = { id: 1, email: adminEmail };
 const userToken = jwtUtils.generateToken(user);
 const data = {
   title: 'Yam pepper pap',
-  price: 99,
+  price: (99).toFixed(2),
   priceDenomination: 'NGN',
-  weight: 2,
+  weight: (2).toFixed(2),
   weightUnit: 'kg',
   description: 'Bless your tongue with nourishment'
 };
@@ -65,17 +65,14 @@ describe(`POST ${url}`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
-      expect(res.body.data.id).to.be.a('number');
-      expect(res.body.data.ownerId).to.equal(user.id);
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.owner_id).to.eql(user.id.toString());
       expect(res.body.data.description).to.be.a('string');
-      expect(res.body.data.price).to.be.an('object').and.to.have.keys('value', 'denomination');
-      expect(res.body.data.price.value).to.equal(data.price.toString());
-      expect(res.body.data.price.denomination).to.equal(data.priceDenomination);
-      expect(res.body.data.weight).to.be.an('object').and.to.have.keys('value', 'unit');
-      expect(res.body.data.weight.value).to.equal(data.weight.toString());
-      expect(res.body.data.weight.unit).to.equal(data.weightUnit);
+      expect(res.body.data.price).to.equal(data.price.toString());
+      expect(res.body.data.price_denomination).to.equal(data.priceDenomination);
+      expect(res.body.data.weight).to.equal(data.weight.toString());
+      expect(res.body.data.weight_unit).to.equal(data.weightUnit);
       expect(res.body.data.images).to.be.an('array').and.to.have.length(1);
       expect(res.body.data.images[0]).to.be.a('string').and.satisfy((url) => url.startsWith(fakeCloudinaryBaseUrl));
       expect(uploaderStub.called).to.be.true;
@@ -97,17 +94,14 @@ describe(`POST ${url}`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object');
-      expect(res.body.data).to.have.keys('id', 'ownerId', 'title', 'price', 'weight',
-        'description', 'images');
-      expect(res.body.data.id).to.be.a('number');
-      expect(res.body.data.ownerId).to.equal(user.id);
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'weight_unit', 'price_denomination');
+      expect(res.body.data.owner_id).to.equal(user.id.toString());
       expect(res.body.data.description).to.be.a('string');
-      expect(res.body.data.price).to.be.an('object').and.to.have.keys('value', 'denomination');
-      expect(res.body.data.price.value).to.equal(data.price.toString());
-      expect(res.body.data.price.denomination).to.equal(data.priceDenomination);
-      expect(res.body.data.weight).to.be.an('object').and.to.have.keys('value', 'unit');
-      expect(res.body.data.weight.value).to.equal(data.weight.toString());
-      expect(res.body.data.weight.unit).to.equal(data.weightUnit);
+      expect(res.body.data.price).to.equal(data.price.toString());
+      expect(res.body.data.price_denomination).to.equal(data.priceDenomination);
+      expect(res.body.data.weight).to.equal(data.weight.toString());
+      expect(res.body.data.weight_unit).to.equal(data.weightUnit);
       expect(res.body.data.images).to.be.an('array').and.to.be.empty;
     });
   });

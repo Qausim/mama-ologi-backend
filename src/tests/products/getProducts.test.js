@@ -18,7 +18,8 @@ describe(`GET ${url}`, () => {
         .get(url)
         .send();
       
-      const dbProducts = await Products.getProducts(1);
+      const getRes = await Products.getProducts(1);
+      const { rows: dbProducts } = getRes;
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
