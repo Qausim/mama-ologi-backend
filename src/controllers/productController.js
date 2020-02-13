@@ -96,7 +96,7 @@ export default class ProductController {
     let { query: { page } } = request;
     if (page) {
       page = parseInt(page, 10);
-      if (!page || page <= 0) {
+      if (Number.isNaN(page) || page <= 0) {
         return Responses.badRequestError(response, {
           message: 'Query parameter value for "page" must be a number greater than zero',
         });

@@ -122,6 +122,26 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.data.id).to.equal(product.id);
     });
 
+    it('should update the title and price of a product', async () => {
+      const newTitle = 'updated title for fake pap the second time';
+      const newPrice = (130.5).toFixed(2);
+      const res = await chai.request(app)
+        .patch(`${baseUrl}/${product.id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .set('Content-Type', 'multipart/form-data')
+        .field('title', newTitle)
+        .field('price', newPrice);
+
+      expect(res.status).to.equal(200);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
+      expect(res.body.status).to.equal('success');
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.title).to.equal(newTitle);
+      expect(res.body.data.price).to.equal(newPrice);
+      expect(res.body.data.id).to.equal(product.id);
+    });
+
     it('should update the priceDenomination of a product', async () => {
       const newDenomination = 'NGN';
       const res = await chai.request(app)
