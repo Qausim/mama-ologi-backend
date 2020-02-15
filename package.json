@@ -35,6 +35,7 @@
   },
   "homepage": "https://github.com/Qausim/mama_ologi_backend#readme",
   "dependencies": {
+    "@babel/runtime": "^7.5.4",
     "bcrypt": "^3.0.6",
     "body-parser": "^1.19.0",
     "chai": "^4.2.0",
