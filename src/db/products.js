@@ -13,7 +13,7 @@ export default class Products {
    */
   static async getProducts(page) {
     const perPage = page ? page * 10 : 10;
-    return dbConnection.dbConnect(`SELECT * FROM ${productTableName} OFFSET $1 LIMIT 10`, [perPage]);
+    return dbConnection.dbConnect(`SELECT * FROM ${productTableName} OFFSET $1 LIMIT 10`, [perPage - 10]);
   }
 
   /**
