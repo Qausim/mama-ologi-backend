@@ -8,7 +8,7 @@ export const userTableName = 'users';
 export const roleTableName = 'roles';
 export const productTableName = 'products';
 
-const { adminEmail, adminPassword: password } = envVariables;
+const { adminEmail, adminPassword: password, environtment } = envVariables;
 const customerRole = 'customer';
 const adminRole = 'admin';
 
@@ -102,7 +102,7 @@ export const selectCustomerId = `SELECT id FROM ${roleTableName} WHERE role = 'c
     await dbConnection.dbConnect(createUserTableQuery(customerId));
     await dbConnection.dbConnect(insertAdminQuery, [adminEmail, adminPassword, 'Olawumi', 'Yusuff', adminId]);
     await dbConnection.dbConnect(createProductTableQuery);
-    await dbConnection.dbConnect(insertProductQuery, [adminId]);
+    if (environtment === 'test') await dbConnection.dbConnect(insertProductQuery, [adminId]);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log(error.message);
