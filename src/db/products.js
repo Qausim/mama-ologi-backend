@@ -1,5 +1,5 @@
 import dbConnection from './dbConnection';
-import { productTableName } from './migration';
+import { productTableName, userTableName } from './migration';
 
 
 /**
@@ -13,7 +13,7 @@ export default class Products {
    */
   static async getProducts(page) {
     const perPage = page ? page * 10 : 10;
-    return dbConnection.dbConnect(`SELECT * FROM ${productTableName} OFFSET $1 LIMIT 10`, [perPage - 10]);
+    return dbConnection.dbConnect(`SELECT *, images[1] FROM ${productTableName} OFFSET $1 LIMIT 10`, [perPage - 10]);
   }
 
   /**
@@ -47,8 +47,12 @@ export default class Products {
    * @param {number} productId
    * @returns {object} product
    */
-  static async getProduct(productId) {
-    return dbConnection.dbConnect(`SELECT * FROM ${productTableName} WHERE id = $1`, [productId]);
+  static async getProduct(productId, method) {
+    const query = method === 'get'
+      ? `SELECT products.*, users.first_name, users.last_name, users.phone
+          FROM ${productTableName} LEFT JOIN ${userTableName} ON users.id = products.owner_id WHERE products.id = $1`
+      : `SELECT * FROM ${productTableName} WHERE id = $1`;
+    return dbConnection.dbConnect(query, [productId]);
   }
 
   /**
