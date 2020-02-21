@@ -73,7 +73,7 @@ export default class ProductMiddlware {
     const { productId } = request.params;
     try {
       // Ensure the product exists else return a 404 error
-      const res = await Products.getProduct(productId);
+      const res = await Products.getProduct(productId, request.method.toLowerCase());
       if (!res.rowCount) return Responses.notFoundError(response, 'Product not found');
       // If product exists attach it to the request object and proceed
       const { rows: [product] } = res;

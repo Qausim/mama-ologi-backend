@@ -33,13 +33,13 @@ describe(`GET ${baseUrl}/:productId`, () => {
       const res = await chai.request(app)
         .get(`${baseUrl}/${product.id}`)
         .send();
-      
+
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object');
       expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'price_denomination',
-      'weight', 'weight_unit', 'description', 'images');
+      'weight', 'weight_unit', 'description', 'images', 'first_name', 'last_name', 'phone');
       expect(res.body.data.description).to.be.a('string');
       expect(res.body.data.price).to.be.a('string').and.to.equal(product.price);
       expect(res.body.data.price_denomination).to.equal(product.price_denomination);
