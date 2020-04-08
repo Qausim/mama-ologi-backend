@@ -215,7 +215,11 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
         .patch(`${baseUrl}/${productWithImages.id}`)
         .set('Authorization', `Bearer ${userToken}`)
         .set('Content-Type', 'multipart/form-data')
-        .attach('productImages', `${testImagesDir}/camera.jpg`);
+        .attach('productImages', `${testImagesDir}/camera.jpg`)
+        .set('productImages', 'https://cloudinary.com/qausim/image/upload/v1/whatelse.png')
+        .set('productImages', 'deleted:https://cloudinary.com/qausim/image/upload/v1/whatelse2.png');
+
+      console.log(res.body.data);
 
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');

@@ -25,7 +25,7 @@ export default class CloudinaryService {
    * @param {object} request
    * @param {callback} next
    */
-  static async uploadImages(request, productImages, next) {
+  static async uploadImages(request, productImages, sparedImages, next) {
     const { user: { userId } } = request;
     try {
       // Loop over and upload each image
@@ -43,7 +43,7 @@ export default class CloudinaryService {
 
       const images = await Promise.all(results);
       // Attach the urls to the images to the request body and proceed to the controller
-      request.body.images = images.map((image) => image.secure_url);
+      request.body.images = images.map((image) => image.secure_url).concat(sparedImages);
       next();
     } catch (error) {
       next(new Error('Error uploading images'));

@@ -33,6 +33,21 @@ export default class ProductMiddlware {
     ];
   }
 
+  static async deleteExistingImages(response, existingImages, productImages) {
+    const imagesToDelete = [];
+    const sparedImages = [];
+    existingImages.forEach((img) => {
+      if (img.split(':')[0] === 'deleted') imagesToDelete.push(img.slice(8));
+      else sparedImages.push(img);
+    });
+    if (
+      productImages && existingImages.length - imagesToDelete.length + productImages.length > 4
+    ) return Responses.badRequestError(response, { message: 'Total images cannot be more than four' });
+
+    await CloudinaryService.deleteImages(imagesToDelete);
+    return sparedImages;
+  }
+
   /**
    * Checks if there are image uploads in the request and uploads them to Cloudinary
    * @param {object} request
@@ -40,7 +55,8 @@ export default class ProductMiddlware {
    * @param {callback} next
    */
   static async processImages(request, response, next) {
-    let { productImages } = request.files;
+    // eslint-disable-next-line prefer-const
+    let { product, files: { productImages }, body: { productImages: existingImages } } = request;
     // If no images proceed to the controller
     if (!(productImages)) return next();
     // "productImages" is an array when more than one file but an object when a single file
@@ -54,12 +70,15 @@ export default class ProductMiddlware {
     if (wrongFormatOrTooHeavy) {
       return Responses.badRequestError(response, { message: 'Only jpeg and png images, each not greater than 2mb, are allowed' });
     }
-    // Delete existing images if new images
-    if (request.product && request.product.images.length) {
-      await CloudinaryService.deleteImages(request.product.images);
+
+    // Delete deleted existing images if new images
+    let sparedImages = [];
+    if (product && existingImages && existingImages.length) {
+      sparedImages = await ProductMiddlware
+        .deleteExistingImages(response, existingImages, productImages);
     }
 
-    CloudinaryService.uploadImages(request, productImages, next);
+    CloudinaryService.uploadImages(request, productImages, sparedImages, next);
   }
 
   /**
