@@ -27,6 +27,20 @@ describe(`GET ${url}`, () => {
       expect(res.body.data).to.have.length(dbProducts.length);
     });
 
+    it('should get the first page (10 items) of products', async () => {
+      const res = await chai.request(app)
+        .get(`${url}?page=1`)
+        .send();
+      
+      const getRes = await Products.getProducts(1);
+      const { rows: dbProducts } = getRes;
+      expect(res.status).to.equal(200);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
+      expect(res.body.status).to.equal('success');
+      expect(res.body.data).to.be.an('array');
+      expect(res.body.data).to.have.length(dbProducts.length);
+    });
+
     it('should get an empty list for a page of products beyond the available', async () => {
       const res = await chai.request(app)
         .get(`${url}?page=50`)
