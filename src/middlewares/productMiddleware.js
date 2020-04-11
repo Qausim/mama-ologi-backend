@@ -41,7 +41,7 @@ export default class ProductMiddlware {
    * @param {array} productImages
    * @param {object} error
    */
-  static filterImagesToDelete(existingImages, productImages = [], error) {
+  static filterImagesToDelete(existingImages, productImages, error) {
     const imagesToDelete = [];
     const sparedImages = [];
     existingImages.forEach((img) => {
@@ -64,8 +64,10 @@ export default class ProductMiddlware {
    */
   static async processImages(request, response, next) {
     const { files, body: { productImages: existingImages = [] } } = request;
-    let productImages; let remainingImages = []; const errors = {};
-    if (files) productImages = files.productImages;
+    let productImages = []; let remainingImages = []; const errors = {};
+    if (files && files.productImages) {
+      productImages = files.productImages[0] ? files.productImages : [files.productImages];
+    }
     try {
       if (existingImages.length) {
         const { sparedImages, imagesToDelete } = ProductMiddlware
@@ -76,7 +78,7 @@ export default class ProductMiddlware {
         request.body.images = sparedImages;
       }
       // If no images proceed to the controller
-      if (!(productImages)) return next();
+      if (!(productImages.length)) return next();
       // Format it to be an array in all cases
       productImages = productImages[0] ? productImages : [productImages];
       if (productImages.length > 4) {
@@ -88,7 +90,7 @@ export default class ProductMiddlware {
         return Responses.badRequestError(response, { message: 'Only jpeg and png images, each not greater than 2mb, are allowed' });
       }
 
-      CloudinaryService.uploadImages(request, productImages, remainingImages, next);      
+      CloudinaryService.uploadImages(request, productImages, remainingImages, next);
     } catch (error) {
       next(new Error());
     }
