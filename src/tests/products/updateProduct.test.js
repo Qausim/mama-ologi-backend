@@ -215,7 +215,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
         .patch(`${baseUrl}/${productWithImages.id}`)
         .set('Authorization', `Bearer ${userToken}`)
         .set('Content-Type', 'multipart/form-data')
-        .attach('productImages', `${testImagesDir}/camera.jpg`);
+        .attach('productImages', `${testImagesDir}/camera.jpg`)
 
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
@@ -228,6 +228,28 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       });
       expect(res.body.data.id).to.equal(productWithImages.id);
       expect(uploaderStub.called).to.be.true;
+      // expect(cloudApiDeleterStub.called).to.be.true;
+    });
+    
+    it('should delete an existing product images', async () => {
+      const productImages = [
+        'https://cloudinary.com/qausim/image/upload/v1/whatelse.png',
+        'deleted:https://cloudinary.com/qausim/image/upload/v1/whatelse2.png'
+      ];
+
+      const res = await chai.request(app)
+        .patch(`${baseUrl}/${productWithImages.id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ productImages });
+
+      expect(res.status).to.equal(200);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
+      expect(res.body.status).to.equal('success');
+      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
+        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data.images).to.have.length(1);
+      expect(res.body.data.images[0]).to.equal(productImages[0]);
+      expect(res.body.data.id).to.equal(productWithImages.id);
       expect(cloudApiDeleterStub.called).to.be.true;
     });
   });
@@ -576,41 +598,95 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(cloudApiDeleterStub.called).to.be.false;
     });
 
-    it('should encounter an error updating product in database', async () => {
-      const dbStub = sinon.stub(Products, 'updateProduct').throws(new Error());
-
+    it('should fail to update an existing product with zero images by image deletion', async () => {
       const res = await chai.request(app)
-        .patch(`${baseUrl}/${product.id}`)
-        .set('Authorization', userToken)
-        .set('Content-Type', 'multipart/form-data')
-        .field('title', 'updating this title should fail, you know, a server error');
-        
-      expect(res.status).to.equal(500);
+        .patch(`${baseUrl}/${productWithImages.id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ productImages: ['deleted:https://cloudinary.com/qausim/image/upload/v1/whatelse2.png'] });
+
+      expect(res.status).to.equal(400);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.be.an('object').and.to.have.property('message');
-      expect(res.body.error.message).to.equal('Internal server error');
-      expect(dbStub.called).to.be.true;
-      dbStub.restore();
+      expect(res.body.error).to.be.an('object').and.have.property('message');
+      expect(res.body.error.message).to.equal('There must be at least one image for a product');
+      expect(cloudApiDeleterStub.called).to.be.false;
     });
+    
+    it('should fail to update an existing product with more than four images', async () => {
+      const res = await chai.request(app)
+        .patch(`${baseUrl}/${productWithImages.id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ productImages: [
+          'https://cloudinary.com/qausim/image/upload/v1/whatelse1.png',
+          'https://cloudinary.com/qausim/image/upload/v1/whatelse2.png',
+          'https://cloudinary.com/qausim/image/upload/v1/whatelse3.png',
+          'https://cloudinary.com/qausim/image/upload/v1/whatelse4.png',
+          'https://cloudinary.com/qausim/image/upload/v1/whatelse5.png'
+        ] });
 
-    it('should encounter an error while uploading images', async () => {
+      expect(res.status).to.equal(400);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+      expect(res.body.status).to.equal('error');
+      expect(res.body.error).to.be.an('object').and.have.property('message');
+      expect(res.body.error.message).to.equal('Maximum of 4 image files allowed');
+      expect(cloudApiDeleterStub.called).to.be.false;
+    });
+    
+    it('should encounter an error updating product in database', async () => {
+      const dbStub = sinon.stub(Products, 'updateProduct').throws(new Error());
+      
+      const res = await chai.request(app)
+      .patch(`${baseUrl}/${product.id}`)
+      .set('Authorization', userToken)
+      .set('Content-Type', 'multipart/form-data')
+        .field('title', 'updating this title should fail, you know, a server error');
+        
+        expect(res.status).to.equal(500);
+        expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+        expect(res.body.status).to.equal('error');
+        expect(res.body.error).to.be.an('object').and.to.have.property('message');
+        expect(res.body.error.message).to.equal('Internal server error');
+        expect(dbStub.called).to.be.true;
+        dbStub.restore();
+      });
+      
+      it('should encounter an error while uploading images', async () => {
       // Restore previous behaviour of Cloudinary upload API before setting a new stub
       uploaderStub.restore();
       uploaderStub = sinon.stub(cloudinary.uploader, 'upload').throws(new Error());
-
+      
       const res = await chai.request(app)
-        .patch(`${baseUrl}/${product.id}`)
+      .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', userToken)
         .set('Content-Type', 'multipart/form-data')
         .attach('productImages', `${testImagesDir}/py.png`);
-
-      expect(res.status).to.equal(500);
-      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
-      expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.be.an('object').and.to.have.property('message');
-      expect(res.body.error.message).to.equal('Error uploading images');
-      expect(uploaderStub.called).to.be.true;
-    });
+        
+        expect(res.status).to.equal(500);
+        expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+        expect(res.body.status).to.equal('error');
+        expect(res.body.error).to.be.an('object').and.to.have.property('message');
+        expect(res.body.error.message).to.equal('Error uploading images');
+        expect(uploaderStub.called).to.be.true;
+      });
+      
+      it('should an error while deleting existing product images', async () => {
+        cloudApiDeleterStub.restore();
+        cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').throws(new Error());
+        const res = await chai.request(app)
+          .patch(`${baseUrl}/${productWithImages.id}`)
+          .set('Authorization', `Bearer ${userToken}`)
+          .send({ productImages: [
+            'https://cloudinary.com/qausim/image/upload/v1/whatelse2.png',
+            'https://cloudinary.com/qausim/image/upload/v1/whatelse3.png',
+            'deleted:https://cloudinary.com/qausim/image/upload/v1/whatelse1.png'
+          ] });
+  
+        expect(res.status).to.equal(500);
+        expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+        expect(res.body.status).to.equal('error');
+        expect(res.body.error).to.be.an('object').and.have.property('message');
+        expect(res.body.error.message).to.equal('Internal server error');
+        expect(cloudApiDeleterStub.called).to.be.true;
+      });
   });
 });

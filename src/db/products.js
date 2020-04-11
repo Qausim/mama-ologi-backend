@@ -12,7 +12,7 @@ export default class Products {
    * @returns {Promise - array} products
    */
   static async getProducts(page) {
-    const perPage = page ? page * 10 : 10;
+    const perPage = page * 10;
     return dbConnection.dbConnect(`SELECT *, images[1] FROM ${productTableName} OFFSET $1 LIMIT 10`, [perPage - 10]);
   }
 

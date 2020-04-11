@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable newline-per-chained-call */
 import { validationResult } from 'express-validator';
 import Responses from '../utils/responseUtils';
@@ -6,6 +7,7 @@ import Products from '../db/products';
 import { createProductValidations, updateProductValidations } from '../validation/productValidation';
 
 
+const maxImageError = 'Maximum of 4 image files allowed';
 /**
  * Defines middlewares for the product routes
  */
@@ -34,32 +36,62 @@ export default class ProductMiddlware {
   }
 
   /**
+   * Filters existing product images to determine which to delete and which to spare
+   * @param {array} existingImages
+   * @param {array} productImages
+   * @param {object} error
+   */
+  static filterImagesToDelete(existingImages, productImages = [], error) {
+    const imagesToDelete = [];
+    const sparedImages = [];
+    existingImages.forEach((img) => {
+      if (img.split(':')[0] === 'deleted') imagesToDelete.push(img.slice(8));
+      else sparedImages.push(img);
+    });
+
+    if (!(sparedImages.length + productImages.length)) {
+      error.message = 'There must be at least one image for a product';
+    } else if (sparedImages.length + productImages.length > 4) error.message = maxImageError;
+
+    return { imagesToDelete, sparedImages };
+  }
+
+  /**
    * Checks if there are image uploads in the request and uploads them to Cloudinary
    * @param {object} request
    * @param {object} response
    * @param {callback} next
    */
   static async processImages(request, response, next) {
-    let { productImages } = request.files;
-    // If no images proceed to the controller
-    if (!(productImages)) return next();
-    // "productImages" is an array when more than one file but an object when a single file
-    // Format it to be an array in all cases
-    productImages = productImages[0] ? productImages : [productImages];
-    if (productImages.length > 4) return Responses.badRequestError(response, { message: 'Maximum of 4 image files allowed' });
-    // If there's a file type other than "jpeg" or "png", or greater than 2mb, terminate the request
-    const wrongFormatOrTooHeavy = productImages.find(({ type, size }) => !['image/jpeg', 'image/png'].includes(type)
-    || size > 2 * 1024 * 1024);
+    const { files, body: { productImages: existingImages = [] } } = request;
+    let productImages; let remainingImages = []; const errors = {};
+    if (files) productImages = files.productImages;
+    try {
+      if (existingImages.length) {
+        const { sparedImages, imagesToDelete } = ProductMiddlware
+          .filterImagesToDelete(existingImages, productImages, errors);
+        remainingImages = sparedImages;
+        if (errors.message) return Responses.badRequestError(response, errors);
+        if (imagesToDelete.length) await CloudinaryService.deleteImages(imagesToDelete);
+        request.body.images = sparedImages;
+      }
+      // If no images proceed to the controller
+      if (!(productImages)) return next();
+      // Format it to be an array in all cases
+      productImages = productImages[0] ? productImages : [productImages];
+      if (productImages.length > 4) {
+        return Responses.badRequestError(response, { message: maxImageError });
+      }
+      const wrongFormatOrTooHeavy = productImages
+        .find(({ type, size }) => !['image/jpeg', 'image/png'].includes(type) || size > 2 * 1024 * 1024);
+      if (wrongFormatOrTooHeavy) {
+        return Responses.badRequestError(response, { message: 'Only jpeg and png images, each not greater than 2mb, are allowed' });
+      }
 
-    if (wrongFormatOrTooHeavy) {
-      return Responses.badRequestError(response, { message: 'Only jpeg and png images, each not greater than 2mb, are allowed' });
+      CloudinaryService.uploadImages(request, productImages, remainingImages, next);      
+    } catch (error) {
+      next(new Error());
     }
-    // Delete existing images if new images
-    if (request.product && request.product.images.length) {
-      await CloudinaryService.deleteImages(request.product.images);
-    }
-
-    CloudinaryService.uploadImages(request, productImages, next);
   }
 
   /**
