@@ -61,6 +61,5 @@ export default class CloudinaryService {
     });
 
     await cloudinary.api.delete_resources(publicIds);
-    console.log('DELETED IMAGES');
   }
 }
