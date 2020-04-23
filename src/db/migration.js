@@ -1,7 +1,6 @@
-import bcrypt from 'bcrypt';
-
 import dbConnection from './dbConnection';
 import envVariables from '../environment';
+import { hashPassword } from '../utils/authUtils';
 
 
 export const userTableName = 'users';
@@ -98,7 +97,7 @@ export const selectCustomerId = `SELECT id FROM ${roleTableName} WHERE role = 'c
       customerId = rows[0].id;
     }
 
-    const adminPassword = await bcrypt.hash(password, 10);
+    const adminPassword = await hashPassword(password);
     await dbConnection.dbConnect(createUserTableQuery(customerId));
     await dbConnection.dbConnect(insertAdminQuery, [adminEmail, adminPassword, 'Olawumi', 'Yusuff', adminId]);
     await dbConnection.dbConnect(createProductTableQuery);

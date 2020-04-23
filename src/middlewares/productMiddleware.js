@@ -5,6 +5,7 @@ import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
 import Products from '../db/products';
 import { createProductValidations, updateProductValidations } from '../validation/productValidation';
+import { extractValidationErrors } from '../utils/errorUtils';
 
 
 const maxImageError = 'Maximum of 4 image files allowed';
@@ -22,12 +23,7 @@ export default class ProductMiddlware {
       (request, response, next) => {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
-          const error = errors.errors.map((el) => {
-            let key;
-            if (el.nestedErrors) key = el.nestedErrors[0].param;
-            else key = el.param;
-            return ({ [key]: el.msg });
-          });
+          const error = extractValidationErrors(errors);
           return Responses.badRequestError(response, error);
         }
         next();
