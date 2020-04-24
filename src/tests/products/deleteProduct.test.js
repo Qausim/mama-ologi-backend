@@ -8,6 +8,7 @@ import Products from '../../db/products';
 import jwtUtils from '../../utils/jwtUtils';
 import Users from '../../db/users';
 import envVariables from '../../environment';
+import { internalServerError } from '../../utils/constants';
 
 
 chai.use(chaiHttp);
@@ -229,7 +230,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
         expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
         expect(res.body.status).to.equal('error');
         expect(res.body.error).to.be.an('object').and.to.have.keys('message');
-        expect(res.body.error.message).to.equal('Internal server error');
+        expect(res.body.error.message).to.equal(internalServerError);
         expect(intendedProduct).to.not.be.null;
         expect(cloudApiDeleterStub.called).to.be.true;
     });

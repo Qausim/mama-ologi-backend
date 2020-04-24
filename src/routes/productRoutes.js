@@ -25,5 +25,9 @@ productRouter.patch('/:productId', AuthMiddleware.validateToken, multipartMiddle
   ...ProductMiddleware.validateProductUpdateData(), ProductMiddleware.processImages,
   ProductController.updateProduct);
 
+productRouter.post('/:productId/wishlist-add', ...ProductMiddleware.validateWishlistData(),
+  AuthMiddleware.validateToken, ProductMiddleware.verifyProductExists,
+  ProductController.addToWishlist);
+
 
 export default productRouter;

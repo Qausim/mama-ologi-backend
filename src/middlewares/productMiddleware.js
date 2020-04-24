@@ -4,7 +4,7 @@ import { validationResult } from 'express-validator';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
 import Products from '../db/products';
-import { createProductValidations, updateProductValidations } from '../validation/productValidation';
+import { createProductValidations, updateProductValidations, wishlistValidation } from '../validation/productValidation';
 import { extractValidationErrors } from '../utils/errorUtils';
 
 
@@ -12,7 +12,7 @@ const maxImageError = 'Maximum of 4 image files allowed';
 /**
  * Defines middlewares for the product routes
  */
-export default class ProductMiddlware {
+export default class ProductMiddleware {
   /**
    * Validates request data to create a new product
    * @returns {array}
@@ -66,7 +66,7 @@ export default class ProductMiddlware {
     }
     try {
       if (existingImages.length) {
-        const { sparedImages, imagesToDelete } = ProductMiddlware
+        const { sparedImages, imagesToDelete } = ProductMiddleware
           .filterImagesToDelete(existingImages, productImages, errors);
         remainingImages = sparedImages;
         if (errors.message) return Responses.badRequestError(response, errors);
@@ -141,12 +141,21 @@ export default class ProductMiddlware {
       (request, response, next) => {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
-          const error = errors.errors.map((el) => {
-            let key;
-            if (el.nestedErrors) key = el.nestedErrors[0].param;
-            else key = el.param;
-            return ({ [key]: el.msg });
-          });
+          const error = extractValidationErrors(errors);
+          return Responses.badRequestError(response, error);
+        }
+        next();
+      },
+    ];
+  }
+
+  static validateWishlistData() {
+    return [
+      wishlistValidation.quantity,
+      (request, response, next) => {
+        const errors = validationResult(request);
+        if (!errors.isEmpty()) {
+          const error = extractValidationErrors(errors);
           return Responses.badRequestError(response, error);
         }
         next();

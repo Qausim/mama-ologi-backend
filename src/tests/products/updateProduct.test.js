@@ -8,6 +8,7 @@ import Users from '../../db/users';
 import Products from '../../db/products';
 import cloudinary from '../../config/cloudinaryConfig';
 import envVariables from '../../environment';
+import { internalServerError } from '../../utils/constants';
 
 
 chai.use(chaiHttp);
@@ -645,7 +646,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
         expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
         expect(res.body.status).to.equal('error');
         expect(res.body.error).to.be.an('object').and.to.have.property('message');
-        expect(res.body.error.message).to.equal('Internal server error');
+        expect(res.body.error.message).to.equal(internalServerError);
         expect(dbStub.called).to.be.true;
         dbStub.restore();
       });
@@ -685,7 +686,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
         expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
         expect(res.body.status).to.equal('error');
         expect(res.body.error).to.be.an('object').and.have.property('message');
-        expect(res.body.error.message).to.equal('Internal server error');
+        expect(res.body.error.message).to.equal(internalServerError);
         expect(cloudApiDeleterStub.called).to.be.true;
       });
   });

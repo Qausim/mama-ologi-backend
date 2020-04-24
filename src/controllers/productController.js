@@ -17,7 +17,9 @@ export default class ProductController {
     try {
       const insertRes = await Products.addProduct(request);
       const { rows: [product] } = insertRes;
-      Responses.success(response, product, 201);
+      return product ? Responses.success(response, product, 201) : Responses.forbiddenError(
+        response, 'Unable to insert product, please ensure you have appropriate access',
+      );
     } catch (error) {
       next(new Error());
     }
@@ -112,7 +114,28 @@ export default class ProductController {
     }
   }
 
-  static async getProduct(request, response) {
+  /**
+   * Send product in response
+   * @param {object} request
+   * @param {object} response
+   */
+  static getProduct(request, response) {
     return Responses.success(response, request.product);
+  }
+
+  /**
+   * Adds a product to wishlist
+   * @param {object} request
+   * @param {object} response
+   * @param {function} next
+   */
+  static async addToWishlist(request, response, next) {
+    const { user: { userId }, params: { productId }, body: { quantity } } = request;
+    try {
+      const res = await Products.addToWishlist(userId, productId, quantity);
+      return Responses.success(response, res.rows, 200);
+    } catch (error) {
+      next(new Error());
+    }
   }
 }

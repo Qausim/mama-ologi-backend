@@ -7,6 +7,8 @@ import app from '../..';
 import jwtUtils from '../../utils/jwtUtils';
 import envVariables from '../../environment';
 import Products from '../../db/products';
+import { mockProduct1 } from '../../mock/product.mock';
+import { internalServerError } from '../../utils/constants';
 
 chai.use(chaiHttp);
 const { expect } = chai;
@@ -14,14 +16,7 @@ const url = '/api/v1/products';
 const { adminEmail } = envVariables;
 const user = { id: 1, email: adminEmail };
 const userToken = jwtUtils.generateToken(user);
-const data = {
-  title: 'Yam pepper pap',
-  price: (99).toFixed(2),
-  priceDenomination: 'NGN',
-  weight: (2).toFixed(2),
-  weightUnit: 'kg',
-  description: 'Bless your tongue with nourishment'
-};
+const data = mockProduct1;
 
 const splittedDir = __dirname.replace(/[\\]/g, '/').split('/');
 const testImagesDir = `${splittedDir.slice(0, splittedDir.length - 3).join('/')}/testImages`;
@@ -663,7 +658,7 @@ describe(`POST ${url}`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.property('message');
-      expect(res.body.error.message).to.equal('Internal server error');
+      expect(res.body.error.message).to.equal(internalServerError);
       expect(dbStub.called).to.be.true;
       dbStub.restore();
     });
