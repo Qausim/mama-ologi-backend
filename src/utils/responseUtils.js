@@ -49,13 +49,25 @@ export default class Responses {
   }
 
   /**
-   * Defines the specification for responses in not forbidden error cases
+   * Defines the specification for responses in not conflict error cases
    * @param {object} response
    * @param {string} message
    * @returns {object} response
    */
-  static forbiddenError(response, message) {
+  static conflictError(response, message) {
     return response.status(409).json({
+      status: 'error',
+      error: { message },
+    });
+  }
+
+  /**
+   * Defines the specification for responses in forbidden error cases
+   * @param {object} response
+   * @param {string} message
+   */
+  static forbiddenError(response, message) {
+    return response.status(403).json({
       status: 'error',
       error: { message },
     });

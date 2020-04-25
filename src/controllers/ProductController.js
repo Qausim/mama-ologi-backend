@@ -2,6 +2,8 @@ import Products from '../db/products';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
 import { productTableName } from '../db/migration';
+import { productCreationError } from '../utils/constants';
+
 
 /**
  * Defines the controllers for the /products endpoint
@@ -17,9 +19,9 @@ export default class ProductController {
     try {
       const insertRes = await Products.addProduct(request);
       const { rows: [product] } = insertRes;
-      return product ? Responses.success(response, product, 201) : Responses.forbiddenError(
-        response, 'Unable to insert product, please ensure you have appropriate access',
-      );
+      return product
+        ? Responses.success(response, product, 201)
+        : Responses.forbiddenError(response, productCreationError);
     } catch (error) {
       next(new Error());
     }
@@ -132,8 +134,8 @@ export default class ProductController {
   static async addToWishlist(request, response, next) {
     const { user: { userId }, params: { productId }, body: { quantity } } = request;
     try {
-      const res = await Products.addToWishlist(userId, productId, quantity);
-      return Responses.success(response, res.rows, 200);
+      const { rows: [{ wishlist }] } = await Products.addToWishlist(userId, productId, quantity);
+      return Responses.success(response, wishlist, 200);
     } catch (error) {
       next(new Error());
     }

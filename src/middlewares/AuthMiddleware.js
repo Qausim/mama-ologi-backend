@@ -6,6 +6,7 @@ import authValidation from '../validation/authValidation';
 import userValidation from '../validation/userValidation';
 import { extractValidationErrors } from '../utils/errorUtils';
 import Users from '../db/users';
+import { emptyTokenError, invalidTokenError } from '../utils/constants';
 
 
 /**
@@ -38,14 +39,14 @@ export default class AuthMiddleware {
    */
   static validateToken(request, response, next) {
     let { headers: { authorization: token } } = request;
-    if (!token) return Responses.unauthorizedError(response, 'You need to be signed in to perform this operation');
+    if (!token) return Responses.unauthorizedError(response, emptyTokenError);
     if (token.startsWith('Bearer')) [, token] = token.split(' ');
     try {
       const { userId, userEmail } = jwtUtils.verifyToken(token);
       request.user = { userId, userEmail };
       next();
     } catch (error) {
-      return Responses.unauthorizedError(response, 'Unauthorized operation, please sign in and try again');
+      return Responses.unauthorizedError(response, invalidTokenError);
     }
   }
 

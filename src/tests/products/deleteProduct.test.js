@@ -9,6 +9,9 @@ import jwtUtils from '../../utils/jwtUtils';
 import Users from '../../db/users';
 import envVariables from '../../environment';
 import { internalServerError } from '../../utils/constants';
+import dbConnection from '../../db/dbConnection';
+import { productTableName } from '../../db/migration';
+import { productWithImages, productWithoutImages } from '../mock/product.mock';
 
 
 chai.use(chaiHttp);
@@ -30,43 +33,31 @@ before((done) => {
 
 describe(`DELETE ${baseUrl}/:productId`, () => {
   describe('SUCCESS', () => {
-    let product;
-    let productWithImages;
+    let localProduct;
+    let localProductWithImages;
     let cloudApiDeleterStub;
 
-    // Insert an image without images and one with images, and stub Cloudinary API before all tests
     before((done) => {
-      Products.addProduct({
-        body: {
-          title: 'fake pap',
-          ownerId: user.id,
-          price: '1900',
-          priceDenomination: 'USD',
-          weight: 20,
-          weightUnit: 'g',
-          description: 'This is fake! You heard?! This is fake!!!',
-          images: []
-        },
-        user: { userId: user.id }
-      })
+      dbConnection.dbConnect(
+        `
+          INSERT INTO ${productTableName} (
+            owner_id, title, price, price_denomination, weight, weight_unit, description, images
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8
+          ), (
+            $1, $9, $10, $11, $12, $13, $14, $15
+          ) RETURNING *;  
+        `, 
+        [
+          user.id, productWithImages.title, productWithImages.price, productWithImages.priceDenomination,
+          productWithImages.weight, productWithImages.weightUnit, productWithImages.description,
+          productWithImages.images, productWithoutImages.title, productWithoutImages.price,
+          productWithoutImages.priceDenomination, productWithoutImages.weight,
+          productWithoutImages.weightUnit, productWithoutImages.description, productWithoutImages.images
+        ]
+      )
       .then(({ rows }) => {
-        product = rows[0];
-        return Products.addProduct({
-          body: {
-            title: 'fake pap with images',
-            ownerId: user.id,
-            price: '1900',
-            priceDenomination: 'USD',
-            weight: 20,
-            weightUnit: 'g',
-            description: 'This is fake! You heard?! This is fake!!!',
-            images: ['fake-image1.png', 'fake-image2.png'],
-          },
-          user: { userId: user.id }
-        });
-      })
-      .then(({ rows }) => {
-        productWithImages = rows[0];
+        [localProductWithImages, localProduct] = rows;
         cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').resolves('done');
         done();
       })
@@ -81,7 +72,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
 
     it('should delete a product without images successfully', async () => {
       const res = await chai.request(app)
-        .delete(`${baseUrl}/${product.id}`)
+        .delete(`${baseUrl}/${localProduct.id}`)
         .set('Authorization', `Bearer ${userToken}`)
         .send();
 
@@ -89,13 +80,13 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object').and.to.have.keys('message');
-      expect(res.body.data.message).to.equal(`"${product.title}" successfully deleted`);
+      expect(res.body.data.message).to.equal(`"${localProduct.title}" successfully deleted`);
       expect(cloudApiDeleterStub.called).to.be.false;
     });
 
     it('should delete a product with images successfully', async () => {
       const res = await chai.request(app)
-        .delete(`${baseUrl}/${productWithImages.id}`)
+        .delete(`${baseUrl}/${localProductWithImages.id}`)
         .set('Authorization', `Bearer ${userToken}`)
         .send();
 
@@ -103,68 +94,53 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object').and.to.have.keys('message');
-      expect(res.body.data.message).to.equal(`"${productWithImages.title}" successfully deleted`);
+      expect(res.body.data.message).to.equal(`"${localProductWithImages.title}" successfully deleted`);
       expect(cloudApiDeleterStub.called).to.be.true;
     });
   });
 
 
   describe('FAILURE', () => {
-    let product;
-    let productWithImages;
+    let localProduct;
+    let localProductWithImages;
     let cloudApiDeleterStub;
 
     // Insert an image without images and one with images, and stub Cloudinary API before all tests
     before((done) => {
-      Products.addProduct({
-        body: {
-          title: 'fake pap',
-          ownerId: user.id,
-          price: '1900',
-          priceDenomination: 'USD',
-          weight: 20,
-          weightUnit: 'g',
-          description: 'This is fake! You heard?! This is fake!!!',
-          images: []
-        },
-        user: { userId: user.id }
+      dbConnection.dbConnect(
+        `
+          INSERT INTO ${productTableName} (
+            owner_id, title, price, price_denomination, weight, weight_unit, description, images
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8
+          ), (
+            $1, $9, $10, $11, $12, $13, $14, $15
+          ) RETURNING *;  
+        `,
+        [
+          user.id, productWithImages.title, productWithImages.price, productWithImages.priceDenomination,
+          productWithImages.weight, productWithImages.weightUnit, productWithImages.description,
+          productWithImages.images, productWithoutImages.title, productWithoutImages.price,
+          productWithoutImages.priceDenomination, productWithoutImages.weight,
+          productWithoutImages.weightUnit, productWithoutImages.description, productWithoutImages.images
+      ])
+      .then(({ rows }) => {
+        [localProductWithImages, localProduct] = rows;
+        cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').throws(new Error('Unable to delete images'));
+        done();
       })
-        .then(({ rows }) => {
-          product = rows[0];
-          return Products.addProduct({
-            body: {
-              title: 'fake pap with images',
-              ownerId: user.id,
-              price: '1900',
-              priceDenomination: 'USD',
-              weight: 20,
-              weightUnit: 'g',
-              description: 'This is fake! You heard?! This is fake!!!',
-              images: ['fake-image1.png', 'fake-image2.png'],
-            },
-            user: { userId: user.id }
-          });
-        })
-        .then(({ rows }) => {
-          productWithImages = rows[0];
-          cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').throws(new Error('Unable to delete images'));
-          done();
-        })
-        .catch((e) => done(e));
+      .catch((e) => done(e));
     });
 
     // Delete inserted test products from db and restore Cloudinary API default behaviour after all tests
     after((done) => {
       cloudApiDeleterStub.restore();
-      Products.deleteProduct(product.id)
-        .then(() => Products.deleteProduct(productWithImages.id))
-        .then(() => done())
-        .catch((e) => done(e));
+      done();
     });
 
     it('should fail to delete a product with no token provided', async () => {
       const res = await chai.request(app)
-        .delete(`${baseUrl}/${product.id}`)
+        .delete(`${baseUrl}/${localProduct.id}`)
         .send();
 
       expect(res.status).to.equal(401);
@@ -177,7 +153,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
 
     it('should fail to delete a product with invalid token provided', async () => {
       const res = await chai.request(app)
-        .delete(`${baseUrl}/${product.id}`)
+        .delete(`${baseUrl}/${localProduct.id}`)
         .set('Authorization', `Bearer ${new Array(5).fill('kk4jcm').join('')}`)
         .send();
 
@@ -207,7 +183,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       async () => {
         const differentUserToken = jwtUtils.generateToken({ id: 3, email: 'fake@gmail.com' })
         const res = await chai.request(app)
-          .delete(`${baseUrl}/${product.id}`)
+          .delete(`${baseUrl}/${localProduct.id}`)
           .set('Authorization', `Bearer ${differentUserToken}`)
           .send();
 
@@ -221,11 +197,11 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
 
     it('should fail to delete a product when its images were not deleted successfully', async () => {
         const res = await chai.request(app)
-          .delete(`${baseUrl}/${productWithImages.id}`)
+          .delete(`${baseUrl}/${localProductWithImages.id}`)
           .set('Authorization', `Bearer ${userToken}`)
           .send();
 
-        const intendedProduct = await Products.getProduct(productWithImages.id);
+        const intendedProduct = await Products.getProduct(localProductWithImages.id);
         expect(res.status).to.equal(500);
         expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
         expect(res.body.status).to.equal('error');

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import multipart from 'connect-multiparty';
 
-import ProductMiddleware from '../middlewares/productMiddleware';
-import ProductController from '../controllers/productController';
+import ProductMiddleware from '../middlewares/ProductMiddleware';
+import ProductController from '../controllers/ProductController';
 import AuthMiddleware from '../middlewares/AuthMiddleware';
 
 

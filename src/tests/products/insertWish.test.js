@@ -2,53 +2,38 @@ import chai from 'chai';
 import chaiHttp from 'chai-http';
 
 import app from '../..';
-import { mockUser } from '../../mock/auth.mock';
+import { mockUser } from '../mock/user.mock';
 import dbConnection from '../../db/dbConnection';
-import { userTableName } from '../../db/migration';
-import envVariables from '../../environment';
-import { mockProduct1 } from '../../mock/product.mock';
+import { userTableName, productTableName } from '../../db/migration';
 import jwtUtils from '../../utils/jwtUtils';
 import Products from '../../db/products';
-import Users from '../../db/users';
-import { hashPassword } from '../../utils/authUtils';
 import { quantityValidationError, internalServerError } from '../../utils/constants';
 import Sinon from 'sinon';
+
+const fixFloat = (num) => parseFloat(num).toFixed(2);
 
 
 chai.use(chaiHttp);
 const { expect } = chai;
-const { adminEmail, adminPassword } = envVariables;
 const v1Url = `/api/v1`;
 const productsUrl = `${v1Url}/products`;
 let user;
 let product;
 
 before((done) => {
-  Products.addProduct({ body: mockProduct1, user: { userId: 1 } })
+  dbConnection.dbConnect(
+    `SELECT * FROM ${productTableName} LIMIT 1`
+  )
     .then(({ rows }) => {
-    product = rows[0];
-    return hashPassword(mockUser.password)
-  })
-  .then((password) => {
-    const [first, rest] = mockUser.email.split('@');
-    const email = [first + 199, rest].join('@');
-    return dbConnection.dbConnect(
-      `INSERT INTO ${userTableName} (
-        email, password, first_name, last_name, address, street, phone, state, country
-      ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9
-        ) ON CONFLICT(email) DO UPDATE SET email=excluded.email RETURNING *`,
-      [
-        email, password, mockUser.firstName, mockUser.lastName,
-        mockUser.address, mockUser.street, mockUser.phone, mockUser.state, mockUser.country
-      ]);
-  })
-  .then(({ rows }) => {
-    user = rows[0];
-    user.token = jwtUtils.generateToken(user);
-    done();
-  })
-  .catch((error) => done(error));
+      product = rows[0];
+      return dbConnection.dbConnect(`SELECT id, email FROM ${userTableName} WHERE email=$1`, [mockUser.email])
+    })
+    .then(({ rows }) => {
+      user = rows[0];
+      user.token = jwtUtils.generateToken(user);
+      done();
+    })
+    .catch((error) => done(error));
 });
 
 describe(`${productsUrl}/:productId/wishlist-add`, () => {
@@ -65,11 +50,14 @@ describe(`${productsUrl}/:productId/wishlist-add`, () => {
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('array').and.to.have.length(1);
       expect(res.body.data[0]).to.be.an('object').and.to.have.keys(
-        'quantity', 'title', 'total_price', 'total_weight');
+        'quantity', 'total_price', 'total_weight',
+        'product_price', 'product_title', 'product_weight'
+      );
       expect(res.body.data[0].quantity).to.equal(quantity);
-      expect(res.body.data[0].title).to.equal(product.title);
-      expect(res.body.data[0].total_price).to.equal((parseFloat(product.price) * quantity).toFixed(2));
-      expect(res.body.data[0].total_weight).to.equal((parseFloat(product.weight) * quantity).toFixed(2));
+      expect(res.body.data[0].product_title).to.equal(product.title);
+      expect(fixFloat(res.body.data[0].product_weight)).to.equal(fixFloat(product.weight));
+      expect(fixFloat(res.body.data[0].total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
+      expect(fixFloat(res.body.data[0].total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
     });
     
     it('should add update product quantity to maximum in user\'s wishlist', async () => {
@@ -84,11 +72,14 @@ describe(`${productsUrl}/:productId/wishlist-add`, () => {
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('array').and.to.have.length(1);
       expect(res.body.data[0]).to.be.an('object').and.to.have.keys(
-        'quantity', 'title', 'total_price', 'total_weight');
+        'quantity', 'total_price', 'total_weight',
+        'product_price', 'product_title', 'product_weight'
+      );
       expect(res.body.data[0].quantity).to.equal(quantity);
-      expect(res.body.data[0].title).to.equal(product.title);
-      expect(res.body.data[0].total_price).to.equal((parseFloat(product.price) * quantity).toFixed(2));
-      expect(res.body.data[0].total_weight).to.equal((parseFloat(product.weight) * quantity).toFixed(2));
+      expect(res.body.data[0].product_title).to.equal(product.title);
+      expect(fixFloat(res.body.data[0].product_weight)).to.equal(fixFloat(product.weight));
+      expect(fixFloat(res.body.data[0].total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
+      expect(fixFloat(res.body.data[0].total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
     });
   });
 

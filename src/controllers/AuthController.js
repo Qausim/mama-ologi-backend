@@ -4,7 +4,6 @@ import Users from '../db/users';
 import Responses from '../utils/responseUtils';
 import jwtUtils from '../utils/jwtUtils';
 import { hashPassword } from '../utils/authUtils';
-import Products from '../db/products';
 
 
 /**
@@ -26,8 +25,6 @@ export default class AuthController {
         const { rows: [user] } = userRes;
         const verified = await bcrypt.compare(password, user.password);
         user.token = jwtUtils.generateToken(user);
-        const { rows: wishlist } = await Products.getUserWishlist(user.id);
-        user.wishlist = wishlist;
         delete user.password; delete user.role_id; delete user.id;
         if (verified) return Responses.success(response, user);
       }
@@ -56,6 +53,7 @@ export default class AuthController {
           email, hashedPassword, firstName, lastName, phone, address, street, state, country,
         );
       if (res.rowCount) {
+        res.rows[0].wishlist = [];
         res.rows[0].token = jwtUtils.generateToken(res.rows[0]);
         return Responses.success(response, res.rows[0], 201);
       }

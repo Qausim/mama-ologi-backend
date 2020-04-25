@@ -9,7 +9,7 @@ export const productTableName = 'products';
 export const wishlistTableName = 'wishlists';
 
 
-const { adminEmail, adminPassword: password, environtment } = envVariables;
+const { adminEmail, adminPassword: password } = envVariables;
 const customerRole = 'customer';
 const adminRole = 'admin';
 
@@ -67,15 +67,15 @@ const createProductTableQuery = `
   );
 `;
 
-export const insertProductQuery = `
-  INSERT INTO ${productTableName} (
-    owner_id, title, price, price_denomination, weight, weight_unit, description, images
-  ) VALUES (
-    $1, 'Yam pepper pap', 1200, 'NGN', 50, 'kg',
-    'Healthy energetic and blesses your day',
-    '{"image1.png", "image2.jpg"}'
-  ) RETURNING *;
-`;
+// export const insertProductQuery = `
+//   INSERT INTO ${productTableName} (
+//     owner_id, title, price, price_denomination, weight, weight_unit, description, images
+//   ) VALUES (
+//     $1, 'Yam pepper pap', 1200, 'NGN', 50, 'kg',
+//     'Healthy energetic and blesses your day',
+//     '{"image1.png", "image2.jpg"}'
+//   ) RETURNING *;
+// `;
 
 const createWishlistQuery = `
   CREATE TABLE IF NOT EXISTS ${wishlistTableName} (
@@ -84,6 +84,23 @@ const createWishlistQuery = `
     product_id BIGINT REFERENCES ${productTableName} (id) UNIQUE NOT NULL,
     quantity SMALLINT NOT NULL
   );
+`;
+
+const createGetWishlistFunctionQuery = `
+  CREATE OR REPLACE FUNCTION get_wishlist(user_id BIGINT) RETURNS json[] AS $wishes$
+    DECLARE wishes json[];
+    BEGIN
+      SELECT ARRAY (
+        SELECT row_to_json(w) FROM (
+          SELECT user_wishes.quantity, product.title AS product_title, product.price AS product_price,
+          product.price * user_wishes.quantity as total_price, product.weight AS product_weight,
+          product.weight * user_wishes.quantity as total_weight FROM ${wishlistTableName} AS user_wishes
+          LEFT JOIN ${productTableName} AS product ON user_wishes.product_id=product.id WHERE user_wishes.owner_id=user_id
+        ) AS w
+      ) INTO wishes;
+      RETURN wishes;
+    END;
+  $wishes$ LANGUAGE plpgsql;
 `;
 
 export const selectAdminId = `SELECT id FROM ${roleTableName} WHERE role = 'admin'`;
@@ -113,7 +130,7 @@ export const selectCustomerId = `SELECT id FROM ${roleTableName} WHERE role = 'c
     await dbConnection.dbConnect(insertAdminQuery, [adminEmail, adminPassword, 'Olawumi', 'Yusuff', adminId]);
     await dbConnection.dbConnect(createProductTableQuery);
     await dbConnection.dbConnect(createWishlistQuery);
-    if (environtment === 'test') await dbConnection.dbConnect(insertProductQuery, [adminId]);
+    await dbConnection.dbConnect(createGetWishlistFunctionQuery);
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log(error.message);
