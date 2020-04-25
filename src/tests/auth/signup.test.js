@@ -4,23 +4,17 @@ import chaiHttp from 'chai-http';
 import app from '../../';
 import dbConnection from '../../db/dbConnection';
 import { userTableName } from '../../db/migration';
+import { mockUser } from '../../mock/auth.mock';
+import Sinon from 'sinon';
+import Users from '../../db/users';
+import { internalServerError } from '../../utils/constants';
 
 
 chai.use(chaiHttp);
 const { expect } = chai;
 const signupUrl = '/api/v1/auth/signup';
 let userId;
-const testUser = {
-  email: 'qauzeem@example.com',
-  password: '12345678',
-  firstName: 'Olawumi',
-  lastName: 'Qauzeem',
-  phone: '09011223344',
-  address: 'No 39',
-  street: 'Bolakale street, Lagos',
-  state: 'Lagos',
-  country: 'Nigeria'
-};
+const testUser = mockUser;
 
 after((done) => {
   dbConnection.dbConnect(`DELETE FROM ${userTableName} WHERE id=$1`, [userId])
@@ -185,6 +179,34 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('country');
       expect(res.body.error[0].country).to.equal('Country is required. Maximum length 50');
+    });
+    
+    it('should fail to register a user due to internal server error in the controller', async () => {
+      const dbStub = Sinon.stub(Users, 'insertUser').throws(new Error());
+      const res = await chai.request(app)
+        .post(signupUrl)
+        .send({ ...testUser, email: 'qauzeem2@example.com' });
+      
+      expect(res.status).to.equal(500);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+      expect(res.body.status).to.equal('error');
+      expect(res.body.error).to.be.an('object').and.to.have.key('message');
+      expect(res.body.error.message).to.equal('Unable to create account');
+      dbStub.restore();
+    });
+    
+    it('should fail to register a user due to internal server error validating user exists', async () => {
+      const dbStub = Sinon.stub(Users, 'getUser').throws(new Error());
+      const res = await chai.request(app)
+        .post(signupUrl)
+        .send({ ...testUser, email: 'qauzeem2@example.com' });
+      
+      expect(res.status).to.equal(500);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+      expect(res.body.status).to.equal('error');
+      expect(res.body.error).to.be.an('object').and.to.have.key('message');
+      expect(res.body.error.message).to.equal(internalServerError);
+      dbStub.restore();
     });
   });
 });

@@ -1,5 +1,5 @@
 import dbConnection from './dbConnection';
-import { productTableName, userTableName } from './migration';
+import { productTableName, userTableName, wishlistTableName, roleTableName } from './migration';
 
 
 /**
@@ -37,7 +37,9 @@ export default class Products {
     return dbConnection.dbConnect(
       `INSERT INTO ${productTableName} (
         owner_id, title, price, price_denomination, weight, weight_unit, description, images
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      ) SELECT $1, $2, $3, $4, $5, $6, $7, $8 WHERE (
+        SELECT roles.role FROM ${userTableName} AS users LEFT JOIN ${roleTableName} AS roles ON users.role_id=roles.id WHERE users.id=$1
+      )='admin' RETURNING *`,
       [ownerId, title, price, priceDenomination, weight, weightUnit, description, images],
     );
   }
@@ -65,9 +67,42 @@ export default class Products {
 
   /**
    * Updates a product
-   * @param {number} productId
+   * @param {string} query
+   * @param {array} data
    */
   static async updateProduct(query, data) {
     return dbConnection.dbConnect(query, data);
+  }
+
+  /**
+   * Adds a product to wishlist
+   * @param {number} userId
+   * @param {number} productId
+   * @param {number} quantity
+   */
+  static async addToWishlist(userId, productId, quantity) {
+    const query = `
+      INSERT INTO ${wishlistTableName} (
+        owner_id, product_id, quantity
+      ) VALUES (
+        $1, $2, $3
+      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(${wishlistTableName}.quantity, excluded.quantity);
+    `;
+    await dbConnection.dbConnect(query, [userId, productId, quantity]);
+    return Products.getUserWishlist(userId);
+  }
+
+  /**
+   * Retrieves all items in a user's wishlist
+   * @param {number} userId
+   */
+  static async getUserWishlist(userId) {
+    return dbConnection
+      .dbConnect(
+        `SELECT wishes.quantity, product.title, product.price * wishes.quantity as total_price,
+          product.weight * wishes.quantity as total_weight FROM ${wishlistTableName} as wishes
+          LEFT JOIN ${productTableName} as product ON wishes.product_id=product.id WHERE wishes.owner_id=$1`,
+        [userId],
+      );
   }
 }

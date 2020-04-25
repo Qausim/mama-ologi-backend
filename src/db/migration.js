@@ -6,6 +6,8 @@ import { hashPassword } from '../utils/authUtils';
 export const userTableName = 'users';
 export const roleTableName = 'roles';
 export const productTableName = 'products';
+export const wishlistTableName = 'wishlists';
+
 
 const { adminEmail, adminPassword: password, environtment } = envVariables;
 const customerRole = 'customer';
@@ -75,6 +77,15 @@ export const insertProductQuery = `
   ) RETURNING *;
 `;
 
+const createWishlistQuery = `
+  CREATE TABLE IF NOT EXISTS ${wishlistTableName} (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    owner_id BIGINT REFERENCES ${userTableName} (id) NOT NULL,
+    product_id BIGINT REFERENCES ${productTableName} (id) UNIQUE NOT NULL,
+    quantity SMALLINT NOT NULL
+  );
+`;
+
 export const selectAdminId = `SELECT id FROM ${roleTableName} WHERE role = 'admin'`;
 export const selectCustomerId = `SELECT id FROM ${roleTableName} WHERE role = 'customer'`;
 
@@ -101,6 +112,7 @@ export const selectCustomerId = `SELECT id FROM ${roleTableName} WHERE role = 'c
     await dbConnection.dbConnect(createUserTableQuery(customerId));
     await dbConnection.dbConnect(insertAdminQuery, [adminEmail, adminPassword, 'Olawumi', 'Yusuff', adminId]);
     await dbConnection.dbConnect(createProductTableQuery);
+    await dbConnection.dbConnect(createWishlistQuery);
     if (environtment === 'test') await dbConnection.dbConnect(insertProductQuery, [adminId]);
   } catch (error) {
     // eslint-disable-next-line no-console

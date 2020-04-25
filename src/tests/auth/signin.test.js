@@ -5,6 +5,7 @@ import sinon from 'sinon';
 import app from '../../index';
 import envVariables from '../../environment';
 import Users from '../../db/users';
+import { internalServerError } from '../../utils/constants';
 
 
 chai.use(chaiHttp);
@@ -103,7 +104,6 @@ describe(signinUrl, () => {
 
     it('should fail due to internal server error', async () => {
       const stub = sinon.stub(Users, 'getUser').throws(new Error());
-
       const res = await chai.request(app)
         .post(signinUrl)
         .send({
@@ -116,7 +116,7 @@ describe(signinUrl, () => {
       expect(res.body).to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.have.key('message');
-      expect(res.body.error.message).to.equal('Internal server error');
+      expect(res.body.error.message).to.equal(internalServerError);
       expect(stub.called).to.be.true;
       stub.restore();
     });

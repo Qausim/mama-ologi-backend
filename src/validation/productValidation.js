@@ -1,5 +1,6 @@
 /* eslint-disable newline-per-chained-call */
 import { body, oneOf } from 'express-validator';
+import { quantityValidationError } from '../utils/constants';
 
 export const createProductValidations = {
   title: oneOf([body('title').trim().isString().isLength({ min: 6 })],
@@ -39,4 +40,8 @@ export const updateProductValidations = {
 
   description: body('description').if(body('description').exists()).trim().not()
     .isEmpty().withMessage("Please provide the product's description"),
+};
+
+export const wishlistValidation = {
+  quantity: body('quantity').isInt().withMessage(quantityValidationError),
 };

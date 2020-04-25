@@ -6,6 +6,7 @@ import app from '../..';
 import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
 import { selectAdminId, insertProductQuery } from '../../db/migration';
+import { internalServerError } from '../../utils/constants';
 
 
 const { expect } = chai;
@@ -72,7 +73,7 @@ describe(`GET ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.key('message');
-      expect(res.body.error.message).to.equal('Internal server error');
+      expect(res.body.error.message).to.equal(internalServerError);
       expect(dbStub.called).to.be.true;
       dbStub.restore();
     });
