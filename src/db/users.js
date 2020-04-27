@@ -13,7 +13,7 @@ export default class Users {
    */
   static async getUser(userEmail) {
     return dbConnection.dbConnect(
-      `SELECT * FROM ${userTableName} LEFT JOIN ${roleTableName} ON ${userTableName}.role_id = ${roleTableName}.id WHERE email = $1`, [userEmail],
+      `SELECT * FROM ${userTableName} AS users LEFT JOIN ${roleTableName} AS roles ON users.role_id=roles.id, get_wishlist(users.id) AS wishlist WHERE email=$1`, [userEmail],
     );
   }
 

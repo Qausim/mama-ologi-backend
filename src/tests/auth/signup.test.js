@@ -4,17 +4,17 @@ import chaiHttp from 'chai-http';
 import app from '../../';
 import dbConnection from '../../db/dbConnection';
 import { userTableName } from '../../db/migration';
-import { mockUser } from '../../mock/auth.mock';
 import Sinon from 'sinon';
 import Users from '../../db/users';
 import { internalServerError } from '../../utils/constants';
+import { mockUser2 } from '../mock/user.mock';
 
 
 chai.use(chaiHttp);
 const { expect } = chai;
 const signupUrl = '/api/v1/auth/signup';
 let userId;
-const testUser = mockUser;
+const testUser = mockUser2;
 
 after((done) => {
   dbConnection.dbConnect(`DELETE FROM ${userTableName} WHERE id=$1`, [userId])
@@ -34,9 +34,10 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body).to.be.an('object').and.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object').and.to.have.keys(
-        'id', 'email', 'first_name', 'last_name', 'phone',
-        'address', 'street', 'state', 'country', 'role_id', 'token'
+        'id', 'email', 'first_name', 'last_name', 'phone', 'address',
+        'street', 'state', 'country', 'role_id', 'token', 'wishlist'
       );
+      expect(res.body.data.wishlist).to.be.an('array').and.to.have.length(0);
 
       userId = res.body.data.id;
       [

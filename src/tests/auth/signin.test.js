@@ -2,7 +2,7 @@ import chai from 'chai';
 import chaiHttp from 'chai-http';
 import sinon from 'sinon';
 
-import app from '../../index';
+import app from '../../';
 import envVariables from '../../environment';
 import Users from '../../db/users';
 import { internalServerError } from '../../utils/constants';

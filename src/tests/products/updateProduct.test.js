@@ -9,6 +9,8 @@ import Products from '../../db/products';
 import cloudinary from '../../config/cloudinaryConfig';
 import envVariables from '../../environment';
 import { internalServerError } from '../../utils/constants';
+import dbConnection from '../../db/dbConnection';
+import { productTableName } from '../../db/migration';
 
 
 chai.use(chaiHttp);
@@ -29,35 +31,15 @@ before((done) => {
       [user] = rows;
       userToken = jwtUtils.generateToken(user);
 
-      return Products.addProduct({
-        body: {
-          title: 'fake pap',
-          ownerId: user.id,
-          price: '1900',
-          priceDenomination: 'USD',
-          weight: (20).toFixed(2),
-          weightUnit: 'g',
-          description: 'This is fake! You heard?! This is fake!!!',
-          images: []
-        },
-        user: { userId: user.id }
-      });
+      return dbConnection.dbConnect(
+        `SELECT * FROM ${productTableName} AS product WHERE array_length(product.images, 1) IS NULL LIMIT 1`
+      );
     })
     .then(({ rows }) => {
       product = rows[0];
-      return Products.addProduct({
-        body: {
-          title: 'fake pap with images',
-          ownerId: user.id,
-          price: '1900',
-          priceDenomination: 'USD',
-          weight: (20).toFixed(2),
-          weightUnit: 'g',
-          description: 'This is fake! You heard?! This is fake!!!',
-          images: ['fake-image1.png', 'fake-image2.png'],
-        },
-        user: { userId: user.id }
-      });
+      return dbConnection.dbConnect(
+        `SELECT * FROM ${productTableName} AS product WHERE array_length(product.images, 1)>0 LIMIT 1`
+      );
     })
     .then(({ rows }) => {
       productWithImages = rows[0];

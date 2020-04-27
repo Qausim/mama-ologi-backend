@@ -1,5 +1,7 @@
 import dbConnection from './dbConnection';
-import { productTableName, userTableName, wishlistTableName, roleTableName } from './migration';
+import {
+  productTableName, userTableName, wishlistTableName, roleTableName,
+} from './migration';
 
 
 /**
@@ -86,10 +88,11 @@ export default class Products {
         owner_id, product_id, quantity
       ) VALUES (
         $1, $2, $3
-      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(${wishlistTableName}.quantity, excluded.quantity);
+      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(
+        ${wishlistTableName}.quantity, excluded.quantity
+      ) RETURNING (SELECT get_wishlist($1) AS wishlist);
     `;
-    await dbConnection.dbConnect(query, [userId, productId, quantity]);
-    return Products.getUserWishlist(userId);
+    return dbConnection.dbConnect(query, [userId, productId, quantity]);
   }
 
   /**
@@ -97,12 +100,10 @@ export default class Products {
    * @param {number} userId
    */
   static async getUserWishlist(userId) {
-    return dbConnection
+    const { rows: [{ wishlist }] } = await dbConnection
       .dbConnect(
-        `SELECT wishes.quantity, product.title, product.price * wishes.quantity as total_price,
-          product.weight * wishes.quantity as total_weight FROM ${wishlistTableName} as wishes
-          LEFT JOIN ${productTableName} as product ON wishes.product_id=product.id WHERE wishes.owner_id=$1`,
-        [userId],
+        'SELECT get_wishlist($1) AS wishlist', [userId],
       );
+    return wishlist;
   }
 }

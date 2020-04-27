@@ -5,7 +5,7 @@ import sinon from 'sinon';
 import app from '../..';
 import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
-import { selectAdminId, insertProductQuery } from '../../db/migration';
+import { productTableName } from '../../db/migration';
 import { internalServerError } from '../../utils/constants';
 
 
@@ -15,8 +15,7 @@ const baseUrl = '/api/v1/products';
 let product;
 
 before((done) => {
-  dbConnection.dbConnect(selectAdminId)
-    .then(({ rows: [{ id }] }) => dbConnection.dbConnect(insertProductQuery, [id]))
+  dbConnection.dbConnect(`SELECT * FROM ${productTableName} LIMIT 1`)
     .then(({ rows }) => {
       if (rows.length) {
         product = rows[0];

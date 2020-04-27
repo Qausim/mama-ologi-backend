@@ -126,7 +126,7 @@ export default class ProductMiddleware {
     // Ensure the user has permission to delete the product (this may feel unnecessary now but
     // preparing for when there'll be need to scale)
     if (product.owner_id !== userId) {
-      return Responses.forbiddenError(response, 'You are not permitted to perform this operation on the product');
+      return Responses.conflictError(response, 'You are not permitted to perform this operation on the product');
     }
     next();
   }
@@ -149,6 +149,10 @@ export default class ProductMiddleware {
     ];
   }
 
+  /**
+   * Validates data for a wishlist operation
+   * @returns {array}
+   */
   static validateWishlistData() {
     return [
       wishlistValidation.quantity,
