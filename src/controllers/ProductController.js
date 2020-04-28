@@ -146,4 +146,20 @@ export default class ProductController {
       next(new Error());
     }
   }
+
+  /**
+   * Removes an item from a user's cart
+   * @param {object} request
+   * @param {object} response
+   * @param {function} next
+   */
+  static async removeFromCart(request, response, next) {
+    const { user: { userId }, params: { productId } } = request;
+    try {
+      const cart = await Products.removeFromCart(userId, productId);
+      return Responses.success(response, cart);
+    } catch (error) {
+      next(new Error());
+    }
+  }
 }
