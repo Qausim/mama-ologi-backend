@@ -1,6 +1,6 @@
 // DB table names
 export const userTableName = 'users';
-export const roleTableName = 'roles';
+export const roleTypeName = 'roles';
 export const productTableName = 'products';
 export const wishlistTableName = 'wishlists';
 
@@ -9,18 +9,17 @@ export const customerRole = 'customer';
 export const adminRole = 'admin';
 
 // DB queries
-export const createRoleTableQuery = `
-  CREATE TABLE IF NOT EXISTS ${roleTableName} (
-    id BIGSERIAL PRIMARY KEY NOT NULL,
-    role VARCHAR(25) UNIQUE NOT NULL
-  );
+export const createUserRoleType = `
+  DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname='${roleTypeName}')
+      THEN CREATE TYPE ${roleTypeName} AS ENUM ('${adminRole}', '${customerRole}');
+      END IF;
+    END
+  $$;
 `;
 
-export const insertRole = `
-  INSERT INTO ${roleTableName} (role) VALUES ($1) ON CONFLICT DO NOTHING RETURNING *;
-`;
-
-export const createUserTableQuery = (customerRoleId) => `
+export const createUserTableQuery = `
   CREATE TABLE IF NOT EXISTS ${userTableName} (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
@@ -32,13 +31,13 @@ export const createUserTableQuery = (customerRoleId) => `
     street VARCHAR(80),
     state VARCHAR(50),
     country VARCHAR(50),
-    role_id BIGINT REFERENCES roles (id) DEFAULT ${customerRoleId}
+    role ${roleTypeName} DEFAULT '${customerRole}'
   );
 `;
 
 export const insertAdminQuery = `
   INSERT INTO ${userTableName} (
-    email, password, first_name, last_name, role_id
+    email, password, first_name, last_name, role
   ) VALUES (
     $1, $2, $3, $4, $5
   ) ON CONFLICT DO NOTHING;
@@ -85,9 +84,7 @@ export const createGetWishlistFunctionQuery = `
   $wishes$ LANGUAGE plpgsql;
 `;
 
-export const selectAdminId = `SELECT id FROM ${roleTableName} WHERE role = 'admin'`;
-export const selectCustomerId = `SELECT id FROM ${roleTableName} WHERE role = 'customer'`;
-export const dropRoleTable = `DROP TABLE IF EXISTS ${roleTableName};`;
+export const dropRoleTable = `DROP TYPE IF EXISTS ${roleTypeName};`;
 export const dropUserTable = `DROP TABLE IF EXISTS ${userTableName};`;
 export const dropProductTable = `DROP TABLE IF EXISTS ${productTableName};`;
 export const dropWishlistItemsTable = `DROP TABLE IF EXISTS ${wishlistTableName}`;

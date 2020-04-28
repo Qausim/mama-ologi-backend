@@ -10,7 +10,7 @@ import Users from '../../db/users';
 import envVariables from '../../environment';
 import { internalServerError, productTableName } from '../../utils/constants';
 import dbConnection from '../../db/dbConnection';
-import { productWithImages, productWithoutImages } from '../mock/product.mock';
+import { productWithImages, productWithoutImages } from '../../mock/product.mock';
 
 
 chai.use(chaiHttp);

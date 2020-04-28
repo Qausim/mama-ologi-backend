@@ -4,7 +4,7 @@ import chaiHttp from 'chai-http';
 import app from '../../';
 import Products from '../../db/products';
 import Users from '../../db/users';
-import { mockUser } from '../mock/user.mock';
+import { mockUser } from '../../mock/user.mock';
 import jwtUtils from '../../utils/jwtUtils';
 import {
   emptyTokenError, invalidTokenError, productNotFoundError, internalServerError
@@ -19,7 +19,6 @@ const deleteFromWishlistBaseUrl = '/api/v1/products';
 let user;
 let products;
 let userToken;
-let wishlist;
 
 before((done) => {
   Users.getUser(mockUser.email)
@@ -35,7 +34,7 @@ before((done) => {
       );
     })
     .then(() => done())
-    .catch((error) => done(error));
+    // .catch((error) => done(error));
 });
 
 

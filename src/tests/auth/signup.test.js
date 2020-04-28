@@ -6,7 +6,7 @@ import dbConnection from '../../db/dbConnection';
 import Sinon from 'sinon';
 import Users from '../../db/users';
 import { internalServerError, userTableName } from '../../utils/constants';
-import { mockUser2 } from '../mock/user.mock';
+import { mockUser2 } from '../../mock/user.mock';
 
 
 chai.use(chaiHttp);
@@ -34,7 +34,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object').and.to.have.keys(
         'id', 'email', 'first_name', 'last_name', 'phone', 'address',
-        'street', 'state', 'country', 'role_id', 'token', 'wishlist'
+        'street', 'state', 'country', 'role', 'token', 'wishlist'
       );
       expect(res.body.data.wishlist).to.be.an('array').and.to.have.length(0);
 

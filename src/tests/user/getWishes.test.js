@@ -3,7 +3,7 @@ import chaiHttp from 'chai-http';
 
 import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
-import { mockUser } from '../mock/user.mock';
+import { mockUser } from '../../mock/user.mock';
 import jwtUtils from '../../utils/jwtUtils';
 import app from '../../';
 import {

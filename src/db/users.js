@@ -1,5 +1,5 @@
 import dbConnection from './dbConnection';
-import { userTableName, roleTableName } from '../utils/constants';
+import { userTableName } from '../utils/constants';
 
 
 /**
@@ -13,7 +13,7 @@ export default class Users {
    */
   static async getUser(userEmail) {
     return dbConnection.dbConnect(
-      `SELECT * FROM ${userTableName} AS users LEFT JOIN ${roleTableName} AS roles ON users.role_id=roles.id, get_wishlist(users.id) AS wishlist WHERE email=$1`, [userEmail],
+      `SELECT * FROM ${userTableName}, get_wishlist(id) AS wishlist WHERE email=$1`, [userEmail],
     );
   }
 
@@ -37,7 +37,7 @@ export default class Users {
         email, password, first_name, last_name, phone, address, street, state, country
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9
-      ) returning id, email, first_name, last_name, phone, address, street, state, country, role_id`,
+      ) returning id, email, first_name, last_name, phone, address, street, state, country, role`,
       [email, password, firstName, lastName, phone, address, street, state, country],
     );
   }
