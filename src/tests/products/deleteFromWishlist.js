@@ -1,7 +1,7 @@
 import chai from 'chai';
 import chaiHttp from 'chai-http';
 
-import app from '../../';
+import app from '../..';
 import Products from '../../db/products';
 import Users from '../../db/users';
 import { mockUser } from '../../mock/user.mock';
@@ -114,4 +114,3 @@ describe(`DELETE ${deleteFromWishlistBaseUrl}`, () => {
     });
   });
 });
-

@@ -136,7 +136,7 @@ export default class Products {
         $1, $2, $3
       ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(
         ${cartTableName}.quantity, excluded.quantity
-      ) RETURNING (SELECT get_cart($1) AS cart);
+        ) RETURNING (SELECT get_cart($1) AS cart);
     `;
     return dbConnection.dbConnect(query, [userId, productId, quantity]);
   }
@@ -153,4 +153,18 @@ export default class Products {
     return cart;
   }
 
+  /**
+   * Removes an item from user's cart in the db
+   * @param {number} userId
+   * @param {number} productId
+   */
+  static async removeFromCart(userId, productId) {
+    const { rows: [{ cart }] } = await dbConnection.dbConnect(
+      `
+        DELETE FROM ${cartTableName} WHERE owner_id=$1 AND product_id=$2 RETURNING get_cart($1) AS cart
+      `,
+      [userId, productId],
+    );
+    return cart;
+  }
 }
