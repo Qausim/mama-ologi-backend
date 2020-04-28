@@ -3,10 +3,9 @@ import chaiHttp from 'chai-http';
 
 import app from '../../';
 import dbConnection from '../../db/dbConnection';
-import { userTableName } from '../../db/migration';
 import Sinon from 'sinon';
 import Users from '../../db/users';
-import { internalServerError } from '../../utils/constants';
+import { internalServerError, userTableName } from '../../utils/constants';
 import { mockUser2 } from '../mock/user.mock';
 
 

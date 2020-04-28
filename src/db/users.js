@@ -1,5 +1,5 @@
 import dbConnection from './dbConnection';
-import { userTableName, roleTableName } from './migration';
+import { userTableName, roleTableName } from '../utils/constants';
 
 
 /**

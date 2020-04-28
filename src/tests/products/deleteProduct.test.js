@@ -8,9 +8,8 @@ import Products from '../../db/products';
 import jwtUtils from '../../utils/jwtUtils';
 import Users from '../../db/users';
 import envVariables from '../../environment';
-import { internalServerError } from '../../utils/constants';
+import { internalServerError, productTableName } from '../../utils/constants';
 import dbConnection from '../../db/dbConnection';
-import { productTableName } from '../../db/migration';
 import { productWithImages, productWithoutImages } from '../mock/product.mock';
 
 

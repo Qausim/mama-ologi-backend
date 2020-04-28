@@ -1,7 +1,7 @@
 import dbConnection from './dbConnection';
 import {
   productTableName, userTableName, wishlistTableName, roleTableName,
-} from './migration';
+} from '../utils/constants';
 
 
 /**
@@ -104,6 +104,16 @@ export default class Products {
       .dbConnect(
         'SELECT get_wishlist($1) AS wishlist', [userId],
       );
+    return wishlist;
+  }
+
+  static async removeFromWishlist(userId, productId) {
+    const { rows: [{ wishlist }] } = await dbConnection.dbConnect(
+      `
+        DELETE FROM ${wishlistTableName} WHERE owner_id=$1 AND product_id=$2 RETURNING get_wishlist($1) AS wishlist
+      `,
+      [userId, productId],
+    );
     return wishlist;
   }
 }

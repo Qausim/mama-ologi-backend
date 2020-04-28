@@ -1,5 +1,5 @@
 import dbConnection from '../../db/dbConnection';
-import { productTableName, userTableName, roleTableName } from '../../db/migration';
+import { productTableName, userTableName, roleTableName } from '../../utils/constants';
 import { productWithImages, productWithoutImages } from './product.mock';
 import { mockUser } from './user.mock';
 import { hashPassword } from '../../utils/authUtils';

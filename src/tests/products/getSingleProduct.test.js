@@ -5,8 +5,7 @@ import sinon from 'sinon';
 import app from '../..';
 import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
-import { productTableName } from '../../db/migration';
-import { internalServerError } from '../../utils/constants';
+import { internalServerError, productTableName } from '../../utils/constants';
 
 
 const { expect } = chai;
