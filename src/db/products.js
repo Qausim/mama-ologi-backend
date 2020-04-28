@@ -140,4 +140,17 @@ export default class Products {
     `;
     return dbConnection.dbConnect(query, [userId, productId, quantity]);
   }
+
+  /**
+   * Retrieves all items in a user's cart
+   * @param {number} userId
+   */
+  static async getUserCart(userId) {
+    const { rows: [{ cart }] } = await dbConnection
+      .dbConnect(
+        'SELECT get_cart($1) AS cart', [userId],
+      );
+    return cart;
+  }
+
 }

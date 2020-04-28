@@ -14,9 +14,8 @@ import Sinon from 'sinon';
 
 chai.use(chaiHttp);
 const { expect } = chai;
-const wishlistUrl = '/api/v1/user/wishlist';
+const cartUrl = '/api/v1/user/cart';
 let user;
-let product;
 
 before((done) => {
   dbConnection.dbConnect(
@@ -30,37 +29,37 @@ before((done) => {
     .catch((error) => done(error));
 });
 
-describe(`GET ${wishlistUrl}`, () => {
+describe(`GET ${cartUrl}`, () => {
   describe('SUCCESS', () => {
-    it('should get a user\'s wishlist', async () => {
+    it('should get a user\'s cart', async () => {
       const res = await chai.request(app)
-        .get(wishlistUrl)
+        .get(cartUrl)
         .set('Authorization', 'Bearer ' + user.token)
         .send();
       
-      const dbWishes = await Products.getUserWishlist(user.id);
+      const dbCart = await Products.getUserCart(user.id);
       expect(res.status).to.be.equal(200);
       expect(res.body).to.be.an('object').and.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('array');
-      expect(res.body.data.length).to.equal(dbWishes.length);
-      const firstWish = res.body.data[0];
-      if (firstWish) {
-        expect(firstWish).to.be.an('object').and.to.have.keys(
+      expect(res.body.data.length).to.equal(dbCart.length);
+      const firstInCart = res.body.data[0];
+      if (firstInCart) {
+        expect(firstInCart).to.be.an('object').and.to.have.keys(
           'quantity', 'product_title', 'product_price',
           'product_id', 'total_price', 'product_weight', 'total_weight'
         );
-        Object.keys(firstWish).forEach((key) => {
-          expect(firstWish[key]).to.equal(dbWishes[0][key]);
+        Object.keys(firstInCart).forEach((key) => {
+          expect(firstInCart[key]).to.equal(dbCart[0][key]);
         });
       }
     });
   });
   
   describe('FAILURE', () => {
-    it('should fail to fetch user\s wishlist due to no token', async () => {
+    it('should fail to fetch user\s cart due to no token', async () => {
       const res = await chai.request(app)
-        .get(wishlistUrl)
+        .get(cartUrl)
         .send();
 
       expect(res.status).to.be.equal(401);
@@ -70,9 +69,9 @@ describe(`GET ${wishlistUrl}`, () => {
       expect(res.body.error.message).to.equal(emptyTokenError);
     });
     
-    it('should fail to fetch user\s wishlist due to invalid token', async () => {
+    it('should fail to fetch user\s cart due to invalid token', async () => {
       const res = await chai.request(app)
-        .get(wishlistUrl)
+        .get(cartUrl)
         .set('Authorization', 'Bearer ' + 'dldlddlldl'.repeat(6))
         .send();
 
@@ -83,10 +82,10 @@ describe(`GET ${wishlistUrl}`, () => {
       expect(res.body.error.message).to.equal(invalidTokenError);
     });
 
-    it('should fail to fetch user\s wishlist due to server error', async () => {
-      const dbStub = Sinon.stub(Products, 'getUserWishlist').throws(new Error());
+    it('should fail to fetch user\s cart due to server error', async () => {
+      const dbStub = Sinon.stub(Products, 'getUserCart').throws(new Error());
       const res = await chai.request(app)
-        .get(wishlistUrl)
+        .get(cartUrl)
         .set('Authorization', 'Bearer ' + user.token)
         .send();
 
