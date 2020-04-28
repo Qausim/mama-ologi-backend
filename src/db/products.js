@@ -1,6 +1,6 @@
 import dbConnection from './dbConnection';
 import {
-  productTableName, userTableName, wishlistTableName,
+  productTableName, userTableName, wishlistTableName, cartTableName,
 } from '../utils/constants';
 
 
@@ -107,6 +107,11 @@ export default class Products {
     return wishlist;
   }
 
+  /**
+   * Removes an item from user's wishlist in the db
+   * @param {number} userId
+   * @param {number} productId
+   */
   static async removeFromWishlist(userId, productId) {
     const { rows: [{ wishlist }] } = await dbConnection.dbConnect(
       `
@@ -115,5 +120,24 @@ export default class Products {
       [userId, productId],
     );
     return wishlist;
+  }
+
+  /**
+   * Adds a product to cart
+   * @param {number} userId
+   * @param {number} productId
+   * @param {number} quantity
+   */
+  static async addToCart(userId, productId, quantity) {
+    const query = `
+      INSERT INTO ${cartTableName} (
+        owner_id, product_id, quantity
+      ) VALUES (
+        $1, $2, $3
+      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(
+        ${cartTableName}.quantity, excluded.quantity
+      ) RETURNING (SELECT get_cart($1) AS cart);
+    `;
+    return dbConnection.dbConnect(query, [userId, productId, quantity]);
   }
 }

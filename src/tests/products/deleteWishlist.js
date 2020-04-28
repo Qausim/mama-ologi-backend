@@ -34,7 +34,7 @@ before((done) => {
       );
     })
     .then(() => done())
-    // .catch((error) => done(error));
+    .catch((error) => done(error));
 });
 
 

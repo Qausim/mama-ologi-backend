@@ -2,11 +2,12 @@
 import dbConnection from './dbConnection';
 
 import {
-  dropWishlistItemsTable, dropProductTable, dropUserTable, dropRoleTable,
+  dropWishlistItemsTable, dropProductTable, dropUserTable, dropRoleTable, dropCartTable,
 } from '../utils/constants';
 
 (async () => {
   try {
+    await dbConnection.dbConnect(dropCartTable);
     await dbConnection.dbConnect(dropWishlistItemsTable);
     await dbConnection.dbConnect(dropProductTable);
     await dbConnection.dbConnect(dropUserTable);

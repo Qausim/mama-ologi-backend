@@ -34,7 +34,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object').and.to.have.keys(
         'id', 'email', 'first_name', 'last_name', 'phone', 'address',
-        'street', 'state', 'country', 'role', 'token', 'wishlist'
+        'street', 'state', 'country', 'role', 'token', 'wishlist', 'cart'
       );
       expect(res.body.data.wishlist).to.be.an('array').and.to.have.length(0);
 

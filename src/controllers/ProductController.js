@@ -1,7 +1,8 @@
 import Products from '../db/products';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
-import { productCreationError, productTableName } from '../utils/constants';
+import { productCreationError } from '../utils/constants';
+import { prepareProductUpdateQuery } from '../utils/productUtils';
 
 
 /**
@@ -52,35 +53,9 @@ export default class ProductController {
    * @param {object} request
    * @param {object} response
    * @param {callback} next
-   * @returns {object} product
    */
   static async updateProduct(request, response, next) {
-    const { productId } = request.params;
-    const expectedFields = [
-      'title', 'price', 'priceDenomination', 'weight', 'weightUnit', 'description', 'images',
-    ];
-    const body = [];
-    expectedFields.forEach((field) => {
-      const value = request.body[field];
-      if (value) {
-        // eslint-disable-next-line no-nested-ternary
-        const key = field === 'priceDenomination' ? 'price_denomination' : field === 'weightUnit' ? 'weight_unit' : field;
-        body.push([
-          key, typeof value === 'string' ? value.trim() : value,
-        ]);
-      }
-    });
-
-    let preparedQuery = '';
-    const preparedData = [];
-    body.forEach(([key, value], index) => {
-      preparedQuery += `${key} = $${index + 1}`;
-      preparedQuery += index === body.length - 1 ? ' ' : ', ';
-      preparedData.push(value);
-    });
-    preparedQuery = `UPDATE ${productTableName} SET ${preparedQuery}WHERE id = $${preparedData.length + 1} RETURNING *`;
-    preparedData.push(productId);
-
+    const { preparedQuery, preparedData } = prepareProductUpdateQuery(request);
     try {
       const res = await Products.updateProduct(preparedQuery, preparedData);
       return Responses.success(response, res.rows[0]);
@@ -140,11 +115,33 @@ export default class ProductController {
     }
   }
 
+  /**
+   * Removes an item from a user's wishlist
+   * @param {object} request
+   * @param {object} response
+   * @param {function} next
+   */
   static async removeFromWishlist(request, response, next) {
     const { user: { userId }, params: { productId } } = request;
     try {
       const wishlist = await Products.removeFromWishlist(userId, productId);
       return Responses.success(response, wishlist);
+    } catch (error) {
+      next(new Error());
+    }
+  }
+
+  /**
+   * Adds a product to cart
+   * @param {object} request
+   * @param {object} response
+   * @param {function} next
+   */
+  static async addToCart(request, response, next) {
+    const { user: { userId }, params: { productId }, body: { quantity } } = request;
+    try {
+      const { rows: [{ cart }] } = await Products.addToCart(userId, productId, quantity);
+      return Responses.success(response, cart, 200);
     } catch (error) {
       next(new Error());
     }
