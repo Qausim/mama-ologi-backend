@@ -52,12 +52,11 @@ export default class AuthController {
         .insertUser(
           email, hashedPassword, firstName, lastName, phone, address, street, state, country,
         );
-      if (res.rowCount) {
-        res.rows[0].wishlist = [];
-        res.rows[0].token = jwtUtils.generateToken(res.rows[0]);
-        return Responses.success(response, res.rows[0], 201);
-      }
-      throw new Error();
+
+      res.rows[0].wishlist = [];
+      res.rows[0].cart = [];
+      res.rows[0].token = jwtUtils.generateToken(res.rows[0]);
+      return Responses.success(response, res.rows[0], 201);
     } catch (error) {
       next(new Error('Unable to create account'));
     }

@@ -4,7 +4,7 @@ import { hashPassword } from '../utils/authUtils';
 import {
   createUserRoleType, createUserTableQuery,
   insertAdminQuery, createProductTableQuery, createWishlistQuery,
-  createGetWishlistFunctionQuery, adminRole,
+  createGetWishlistFunctionQuery, adminRole, createGetCartFunctionQuery, createCartQuery,
 } from '../utils/constants';
 
 
@@ -19,8 +19,10 @@ const { adminEmail, adminPassword: password } = envVariables;
     await dbConnection.dbConnect(createProductTableQuery);
     await dbConnection.dbConnect(createWishlistQuery);
     await dbConnection.dbConnect(createGetWishlistFunctionQuery);
+    await dbConnection.dbConnect(createCartQuery);
+    await dbConnection.dbConnect(createGetCartFunctionQuery);
   } catch (error) {
     // eslint-disable-next-line no-console
-    // console.log(error.message);
+    console.log(error.message);
   }
 })();

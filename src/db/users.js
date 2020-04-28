@@ -13,7 +13,8 @@ export default class Users {
    */
   static async getUser(userEmail) {
     return dbConnection.dbConnect(
-      `SELECT * FROM ${userTableName}, get_wishlist(id) AS wishlist WHERE email=$1`, [userEmail],
+      `SELECT * FROM ${userTableName}, get_wishlist(id) AS wishlist, get_cart(id) AS cart WHERE email=$1`,
+      [userEmail],
     );
   }
 

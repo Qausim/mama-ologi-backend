@@ -32,5 +32,9 @@ productRouter.post('/:productId/wishlist', ...ProductMiddleware.validateWishlist
 productRouter.delete('/:productId/wishlist', AuthMiddleware.validateToken,
   ProductMiddleware.verifyProductExists, ProductController.removeFromWishlist);
 
+productRouter.post('/:productId/cart', ...ProductMiddleware.validateWishlistData(),
+  AuthMiddleware.validateToken, ProductMiddleware.verifyProductExists,
+  ProductController.addToCart);
+
 
 export default productRouter;

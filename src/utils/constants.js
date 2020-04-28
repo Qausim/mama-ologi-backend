@@ -3,6 +3,7 @@ export const userTableName = 'users';
 export const roleTypeName = 'roles';
 export const productTableName = 'products';
 export const wishlistTableName = 'wishlists';
+export const cartTableName = 'carts';
 
 // user roles
 export const customerRole = 'customer';
@@ -84,10 +85,37 @@ export const createGetWishlistFunctionQuery = `
   $wishes$ LANGUAGE plpgsql;
 `;
 
+export const createCartQuery = `
+  CREATE TABLE IF NOT EXISTS ${cartTableName} (
+    id BIGSERIAL PRIMARY KEY NOT NULL,
+    owner_id BIGINT REFERENCES ${userTableName} (id) NOT NULL,
+    product_id BIGINT REFERENCES ${productTableName} (id) UNIQUE NOT NULL,
+    quantity SMALLINT NOT NULL
+  );
+`;
+
+export const createGetCartFunctionQuery = `
+  CREATE OR REPLACE FUNCTION get_cart(user_id BIGINT) RETURNS json[] AS $cart$
+    DECLARE cart json[];
+    BEGIN
+      SELECT ARRAY (
+        SELECT row_to_json(c) FROM (
+          SELECT user_cart.quantity, product.id AS product_id, product.title AS product_title,
+          product.price AS product_price, product.price * user_cart.quantity as total_price,
+          product.weight AS product_weight, product.weight * user_cart.quantity as total_weight FROM ${cartTableName} AS user_cart
+          LEFT JOIN ${productTableName} AS product ON user_cart.product_id=product.id WHERE user_cart.owner_id=user_id
+        ) AS c
+      ) INTO cart;
+      RETURN cart;
+    END;
+  $cart$ LANGUAGE plpgsql;
+`;
+
 export const dropRoleTable = `DROP TYPE IF EXISTS ${roleTypeName};`;
 export const dropUserTable = `DROP TABLE IF EXISTS ${userTableName};`;
 export const dropProductTable = `DROP TABLE IF EXISTS ${productTableName};`;
 export const dropWishlistItemsTable = `DROP TABLE IF EXISTS ${wishlistTableName}`;
+export const dropCartTable = `DROP TABLE IF EXISTS ${cartTableName}`;
 
 // Other constants
 export const internalServerError = 'Internal server error';
