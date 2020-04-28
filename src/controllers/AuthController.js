@@ -25,7 +25,7 @@ export default class AuthController {
         const { rows: [user] } = userRes;
         const verified = await bcrypt.compare(password, user.password);
         user.token = jwtUtils.generateToken(user);
-        delete user.password; delete user.role_id; delete user.id;
+        delete user.password; delete user.id;
         if (verified) return Responses.success(response, user);
       }
 

@@ -6,6 +6,7 @@ import CloudinaryService from '../services/cloudinaryService';
 import Products from '../db/products';
 import { createProductValidations, updateProductValidations, wishlistValidation } from '../validation/productValidation';
 import { extractValidationErrors } from '../utils/errorUtils';
+import { productNotFoundError } from '../utils/constants';
 
 
 const maxImageError = 'Maximum of 4 image files allowed';
@@ -104,7 +105,7 @@ export default class ProductMiddleware {
     try {
       // Ensure the product exists else return a 404 error
       const res = await Products.getProduct(productId, request.method.toLowerCase());
-      if (!res.rowCount) return Responses.notFoundError(response, 'Product not found');
+      if (!res.rowCount) return Responses.notFoundError(response, productNotFoundError);
       // If product exists attach it to the request object and proceed
       const { rows: [product] } = res;
       request.product = product;

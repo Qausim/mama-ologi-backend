@@ -15,7 +15,7 @@
     "start:dev": "nodemon --exec babel-node src/index.js",
     "clean": "rimraf ./build",
     "migration": "babel-node src/db/migration.js",
-    "seed": "babel-node src/tests/mock",
+    "seed": "babel-node src/mock",
     "undo:migration": "babel-node src/db/undoMigration.js"
   },
   "repository": {

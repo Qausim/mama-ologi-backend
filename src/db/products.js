@@ -1,7 +1,7 @@
 import dbConnection from './dbConnection';
 import {
-  productTableName, userTableName, wishlistTableName, roleTableName,
-} from './migration';
+  productTableName, userTableName, wishlistTableName,
+} from '../utils/constants';
 
 
 /**
@@ -40,7 +40,7 @@ export default class Products {
       `INSERT INTO ${productTableName} (
         owner_id, title, price, price_denomination, weight, weight_unit, description, images
       ) SELECT $1, $2, $3, $4, $5, $6, $7, $8 WHERE (
-        SELECT roles.role FROM ${userTableName} AS users LEFT JOIN ${roleTableName} AS roles ON users.role_id=roles.id WHERE users.id=$1
+        SELECT role FROM ${userTableName} WHERE id=$1
       )='admin' RETURNING *`,
       [ownerId, title, price, priceDenomination, weight, weightUnit, description, images],
     );
@@ -104,6 +104,16 @@ export default class Products {
       .dbConnect(
         'SELECT get_wishlist($1) AS wishlist', [userId],
       );
+    return wishlist;
+  }
+
+  static async removeFromWishlist(userId, productId) {
+    const { rows: [{ wishlist }] } = await dbConnection.dbConnect(
+      `
+        DELETE FROM ${wishlistTableName} WHERE owner_id=$1 AND product_id=$2 RETURNING get_wishlist($1) AS wishlist
+      `,
+      [userId, productId],
+    );
     return wishlist;
   }
 }

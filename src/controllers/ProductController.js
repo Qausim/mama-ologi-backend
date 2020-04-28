@@ -1,8 +1,7 @@
 import Products from '../db/products';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
-import { productTableName } from '../db/migration';
-import { productCreationError } from '../utils/constants';
+import { productCreationError, productTableName } from '../utils/constants';
 
 
 /**
@@ -136,6 +135,16 @@ export default class ProductController {
     try {
       const { rows: [{ wishlist }] } = await Products.addToWishlist(userId, productId, quantity);
       return Responses.success(response, wishlist, 200);
+    } catch (error) {
+      next(new Error());
+    }
+  }
+
+  static async removeFromWishlist(request, response, next) {
+    const { user: { userId }, params: { productId } } = request;
+    try {
+      const wishlist = await Products.removeFromWishlist(userId, productId);
+      return Responses.success(response, wishlist);
     } catch (error) {
       next(new Error());
     }

@@ -3,11 +3,12 @@ import chaiHttp from 'chai-http';
 
 import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
-import { userTableName } from '../../db/migration';
-import { mockUser } from '../mock/user.mock';
+import { mockUser } from '../../mock/user.mock';
 import jwtUtils from '../../utils/jwtUtils';
 import app from '../../';
-import { emptyTokenError, invalidTokenError, internalServerError } from '../../utils/constants';
+import {
+  emptyTokenError, invalidTokenError, internalServerError, userTableName
+} from '../../utils/constants';
 import Sinon from 'sinon';
 
 
@@ -47,7 +48,7 @@ describe(`GET ${wishlistUrl}`, () => {
       if (firstWish) {
         expect(firstWish).to.be.an('object').and.to.have.keys(
           'quantity', 'product_title', 'product_price',
-          'total_price', 'product_weight', 'total_weight'
+          'product_id', 'total_price', 'product_weight', 'total_weight'
         );
         Object.keys(firstWish).forEach((key) => {
           expect(firstWish[key]).to.equal(dbWishes[0][key]);

@@ -8,9 +8,8 @@ import Users from '../../db/users';
 import Products from '../../db/products';
 import cloudinary from '../../config/cloudinaryConfig';
 import envVariables from '../../environment';
-import { internalServerError } from '../../utils/constants';
+import { internalServerError, productTableName } from '../../utils/constants';
 import dbConnection from '../../db/dbConnection';
-import { productTableName } from '../../db/migration';
 
 
 chai.use(chaiHttp);

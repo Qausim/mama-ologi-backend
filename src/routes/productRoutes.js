@@ -25,9 +25,12 @@ productRouter.patch('/:productId', AuthMiddleware.validateToken, multipartMiddle
   ...ProductMiddleware.validateProductUpdateData(), ProductMiddleware.processImages,
   ProductController.updateProduct);
 
-productRouter.post('/:productId/wishlist-add', ...ProductMiddleware.validateWishlistData(),
+productRouter.post('/:productId/wishlist', ...ProductMiddleware.validateWishlistData(),
   AuthMiddleware.validateToken, ProductMiddleware.verifyProductExists,
   ProductController.addToWishlist);
+
+productRouter.delete('/:productId/wishlist', AuthMiddleware.validateToken,
+  ProductMiddleware.verifyProductExists, ProductController.removeFromWishlist);
 
 
 export default productRouter;

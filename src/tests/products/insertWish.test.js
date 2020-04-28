@@ -2,12 +2,13 @@ import chai from 'chai';
 import chaiHttp from 'chai-http';
 
 import app from '../..';
-import { mockUser } from '../mock/user.mock';
+import { mockUser } from '../../mock/user.mock';
 import dbConnection from '../../db/dbConnection';
-import { userTableName, productTableName } from '../../db/migration';
 import jwtUtils from '../../utils/jwtUtils';
 import Products from '../../db/products';
-import { quantityValidationError, internalServerError } from '../../utils/constants';
+import {
+  quantityValidationError, internalServerError, productTableName, userTableName
+} from '../../utils/constants';
 import Sinon from 'sinon';
 
 const fixFloat = (num) => parseFloat(num).toFixed(2);
@@ -36,57 +37,59 @@ before((done) => {
     .catch((error) => done(error));
 });
 
-describe(`${productsUrl}/:productId/wishlist-add`, () => {
+describe(`${productsUrl}/:productId/wishlist`, () => {
   describe('SUCCESS', () => {
     it('should add product to user\'s wishlist', async () => {
       const quantity = 2;
       const res = await chai.request(app)
-        .post(`${productsUrl}/${product.id}/wishlist-add`)
+        .post(`${productsUrl}/${product.id}/wishlist`)
         .set('Authorization', `Bearer ${user.token}`)
         .send({ quantity });
       
-      expect(res.status).to.equal(200);
-      expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
-      expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.be.an('array').and.to.have.length(1);
-      expect(res.body.data[0]).to.be.an('object').and.to.have.keys(
+        expect(res.status).to.equal(200);
+        expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
+        expect(res.body.status).to.equal('success');
+        expect(res.body.data).to.be.an('array').and.to.not.be.empty;
+        const serverWish = res.body.data.find((wish) => wish.product_id == product.id);
+        expect(serverWish).to.be.an('object').and.to.have.keys(
         'quantity', 'total_price', 'total_weight',
-        'product_price', 'product_title', 'product_weight'
+        'product_id', 'product_price', 'product_title', 'product_weight'
       );
-      expect(res.body.data[0].quantity).to.equal(quantity);
-      expect(res.body.data[0].product_title).to.equal(product.title);
-      expect(fixFloat(res.body.data[0].product_weight)).to.equal(fixFloat(product.weight));
-      expect(fixFloat(res.body.data[0].total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
-      expect(fixFloat(res.body.data[0].total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
+      expect(serverWish.quantity).to.equal(quantity);
+      expect(serverWish.product_title).to.equal(product.title);
+      expect(fixFloat(serverWish.product_weight)).to.equal(fixFloat(product.weight));
+      expect(fixFloat(serverWish.total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
+      expect(fixFloat(serverWish.total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
     });
     
     it('should add update product quantity to maximum in user\'s wishlist', async () => {
       const quantity = 4;
       const res = await chai.request(app)
-        .post(`${productsUrl}/${product.id}/wishlist-add`)
+        .post(`${productsUrl}/${product.id}/wishlist`)
         .set('Authorization', `Bearer ${user.token}`)
         .send({ quantity });
       
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.be.an('array').and.to.have.length(1);
-      expect(res.body.data[0]).to.be.an('object').and.to.have.keys(
+      expect(res.body.data).to.be.an('array').and.to.not.be.empty;
+      const serverWish = res.body.data.find((wish) => wish.product_id == product.id);
+      expect(serverWish).to.be.an('object').and.to.have.keys(
         'quantity', 'total_price', 'total_weight',
-        'product_price', 'product_title', 'product_weight'
+        'product_id', 'product_price', 'product_title', 'product_weight'
       );
-      expect(res.body.data[0].quantity).to.equal(quantity);
-      expect(res.body.data[0].product_title).to.equal(product.title);
-      expect(fixFloat(res.body.data[0].product_weight)).to.equal(fixFloat(product.weight));
-      expect(fixFloat(res.body.data[0].total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
-      expect(fixFloat(res.body.data[0].total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
+      expect(serverWish.quantity).to.equal(quantity);
+      expect(serverWish.product_title).to.equal(product.title);
+      expect(fixFloat(serverWish.product_weight)).to.equal(fixFloat(product.weight));
+      expect(fixFloat(serverWish.total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
+      expect(fixFloat(serverWish.total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
     });
   });
 
   describe('FAILURE', () => {
     it('should fail to add product to user\'s wishlist due to no token', async () => {
       const res = await chai.request(app)
-        .post(`${productsUrl}/${product.id}/wishlist-add`)
+        .post(`${productsUrl}/${product.id}/wishlist`)
         .send({ quantity: 7 });
 
       expect(res.status).to.equal(401);
@@ -98,7 +101,7 @@ describe(`${productsUrl}/:productId/wishlist-add`, () => {
     
     it('should fail to add product to user\'s wishlist for invalid token', async () => {
       const res = await chai.request(app)
-        .post(`${productsUrl}/${product.id}/wishlist-add`)
+        .post(`${productsUrl}/${product.id}/wishlist`)
         .set('Authorization', 'Bearer ' + 'ldldldld'.repeat(5))
         .send({ quantity: 7 });
 
@@ -111,7 +114,7 @@ describe(`${productsUrl}/:productId/wishlist-add`, () => {
     
     it('should fail to add product to user\'s wishlist for product that doesn\'t exist', async () => {
       const res = await chai.request(app)
-        .post(`${productsUrl}/${500}/wishlist-add`)
+        .post(`${productsUrl}/${500}/wishlist`)
         .set('Authorization', `Bearer ${user.token}`)
         .send({ quantity: 7 });
 
@@ -124,7 +127,7 @@ describe(`${productsUrl}/:productId/wishlist-add`, () => {
     
     it('should fail to add product to user\'s wishlist with invalid quantity', async () => {
       const res = await chai.request(app)
-        .post(`${productsUrl}/${product.id}/wishlist-add`)
+        .post(`${productsUrl}/${product.id}/wishlist`)
         .set('Authorization', `Bearer ${user.token}`)
         .send({ quantity: 2.5 });
 
@@ -139,7 +142,7 @@ describe(`${productsUrl}/:productId/wishlist-add`, () => {
     it('should fail to add product to user\'s wishlist due to error in controller', async () => {
       const dbStub = Sinon.stub(Products, 'addToWishlist').throws(new Error());
       const res = await chai.request(app)
-        .post(`${productsUrl}/${product.id}/wishlist-add`)
+        .post(`${productsUrl}/${product.id}/wishlist`)
         .set('Authorization', `Bearer ${user.token}`)
         .send({ quantity: 8 });
 

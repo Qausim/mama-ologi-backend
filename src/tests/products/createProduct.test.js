@@ -7,10 +7,10 @@ import app from '../..';
 import jwtUtils from '../../utils/jwtUtils';
 import envVariables from '../../environment';
 import Products from '../../db/products';
-import { mockProduct1 } from '../mock/product.mock';
+import { mockProduct1 } from '../../mock/product.mock';
 import { internalServerError, productCreationError } from '../../utils/constants';
 import Users from '../../db/users';
-import { mockUser } from '../mock/user.mock';
+import { mockUser } from '../../mock/user.mock';
 
 chai.use(chaiHttp);
 const { expect } = chai;
