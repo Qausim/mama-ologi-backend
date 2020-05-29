@@ -2,8 +2,11 @@
 import dbConnection from './dbConnection';
 
 import {
-  dropWishlistItemsTable, dropProductTable, dropUserTable, dropRoleTable, dropCartTable,
+  dropWishlistItemsTable, dropProductTable, dropUserTable, dropRoleType, dropCartTable,
 } from '../utils/constants';
+import { getDebugger, debugHelper } from '../utils/debugUtils';
+
+const debug = getDebugger('app:undoMigration');
 
 (async () => {
   try {
@@ -11,8 +14,8 @@ import {
     await dbConnection.dbConnect(dropWishlistItemsTable);
     await dbConnection.dbConnect(dropProductTable);
     await dbConnection.dbConnect(dropUserTable);
-    await dbConnection.dbConnect(dropRoleTable);
+    await dbConnection.dbConnect(dropRoleType);
   } catch (error) {
-    console.log(error.message);
+    debugHelper.error(debug, error);
   }
 })();

@@ -1,5 +1,9 @@
-import Products from '../db/products';
+import User from '../models/user';
 import Responses from '../utils/responseUtils';
+import { getDebugger, debugHelper } from '../utils/debugUtils';
+
+
+const debug = getDebugger('app:UserController');
 
 export default class UserController {
   /**
@@ -11,9 +15,10 @@ export default class UserController {
   static async getWishlist(request, response, next) {
     const { userId } = request.user;
     try {
-      const wishlist = await Products.getUserWishlist(userId);
+      const wishlist = await User.getWishlist(userId);
       return Responses.success(response, wishlist);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -27,9 +32,10 @@ export default class UserController {
   static async getCart(request, response, next) {
     const { userId } = request.user;
     try {
-      const wishlist = await Products.getUserCart(userId);
+      const wishlist = await User.getCart(userId);
       return Responses.success(response, wishlist);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }

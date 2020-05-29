@@ -1,9 +1,9 @@
 import chai from 'chai';
 import chaiHttp from 'chai-http';
 
-import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
 import { mockUser } from '../../mock/user.mock';
+import User from '../../models/user';
 import jwtUtils from '../../utils/jwtUtils';
 import app from '../../';
 import {
@@ -37,7 +37,7 @@ describe(`GET ${cartUrl}`, () => {
         .set('Authorization', 'Bearer ' + user.token)
         .send();
       
-      const dbCart = await Products.getUserCart(user.id);
+      const dbCart = await User.getCart(user.id);
       expect(res.status).to.be.equal(200);
       expect(res.body).to.be.an('object').and.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
@@ -83,7 +83,7 @@ describe(`GET ${cartUrl}`, () => {
     });
 
     it('should fail to fetch user\s cart due to server error', async () => {
-      const dbStub = Sinon.stub(Products, 'getUserCart').throws(new Error());
+      const dbStub = Sinon.stub(User, 'getCart').throws(new Error());
       const res = await chai.request(app)
         .get(cartUrl)
         .set('Authorization', 'Bearer ' + user.token)
@@ -94,6 +94,8 @@ describe(`GET ${cartUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.key('message');
       expect(res.body.error.message).to.equal(internalServerError);
+
+      dbStub.restore();
     });
   });
 })

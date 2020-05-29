@@ -1,10 +1,11 @@
-import Products from '../db/products';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
 import { productCreationError } from '../utils/constants';
 import { prepareProductUpdateQuery } from '../utils/productUtils';
+import Product from '../models/product';
+import { getDebugger, debugHelper } from '../utils/debugUtils';
 
-
+const debug = getDebugger('app:ProductController');
 /**
  * Defines the controllers for the /products endpoint
  */
@@ -17,12 +18,21 @@ export default class ProductController {
    */
   static async addProduct(request, response, next) {
     try {
-      const insertRes = await Products.addProduct(request);
-      const { rows: [product] } = insertRes;
-      return product
-        ? Responses.success(response, product, 201)
+      const {
+        user: { userId },
+        body: {
+          title, price, discount, weight, description, stock, images,
+        },
+      } = request;
+      const newProduct = new Product(
+        userId, title, price, weight, description, stock, discount, images,
+      );
+      const res = await newProduct.save();
+      return res
+        ? Responses.success(response, res, 201)
         : Responses.forbiddenError(response, productCreationError);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -39,12 +49,13 @@ export default class ProductController {
     const { productId } = request.params;
     try {
       // If there are images delete them from the third party service
-      if (product.images.length) await CloudinaryService.deleteImages(product.images);
+      if (product.images.length) await CloudinaryService.deleteImages(product.images.slice(1));
 
       // Delete from the records
-      await Products.deleteProduct(productId);
+      await Product.deleteById(productId, product.images.slice(0, 1));
       return Responses.success(response, { message: `"${product.title}" successfully deleted` });
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -57,9 +68,10 @@ export default class ProductController {
   static async updateProduct(request, response, next) {
     const { preparedQuery, preparedData } = prepareProductUpdateQuery(request);
     try {
-      const res = await Products.updateProduct(preparedQuery, preparedData);
-      return Responses.success(response, res.rows[0]);
+      const product = await Product.updateProduct(preparedQuery, preparedData);
+      return Responses.success(response, product);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -82,10 +94,10 @@ export default class ProductController {
     } else page = 1;
 
     try {
-      const res = await Products.getProducts(page);
-      const { rows: products } = res;
+      const products = await Product.getPaginatedList(page);
       return Responses.success(response, products);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -108,9 +120,10 @@ export default class ProductController {
   static async addToWishlist(request, response, next) {
     const { user: { userId }, params: { productId }, body: { quantity } } = request;
     try {
-      const { rows: [{ wishlist }] } = await Products.addToWishlist(userId, productId, quantity);
+      const wishlist = await Product.addToWishList(userId, productId, quantity);
       return Responses.success(response, wishlist, 200);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -124,9 +137,10 @@ export default class ProductController {
   static async removeFromWishlist(request, response, next) {
     const { user: { userId }, params: { productId } } = request;
     try {
-      const wishlist = await Products.removeFromWishlist(userId, productId);
+      const wishlist = await Product.removeFromWishlist(userId, productId);
       return Responses.success(response, wishlist);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -140,9 +154,10 @@ export default class ProductController {
   static async addToCart(request, response, next) {
     const { user: { userId }, params: { productId }, body: { quantity } } = request;
     try {
-      const { rows: [{ cart }] } = await Products.addToCart(userId, productId, quantity);
+      const cart = await Product.addToCart(userId, productId, quantity);
       return Responses.success(response, cart, 200);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -156,9 +171,10 @@ export default class ProductController {
   static async removeFromCart(request, response, next) {
     const { user: { userId }, params: { productId } } = request;
     try {
-      const cart = await Products.removeFromCart(userId, productId);
+      const cart = await Product.removeFromCart(userId, productId);
       return Responses.success(response, cart);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }

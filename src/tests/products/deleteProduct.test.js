@@ -4,13 +4,15 @@ import sinon from 'sinon';
 import cloudinary from '../../config/cloudinaryConfig';
 
 import app from '../..';
-import Products from '../../db/products';
 import jwtUtils from '../../utils/jwtUtils';
-import Users from '../../db/users';
+import User from '../../models/user';
 import envVariables from '../../environment';
-import { internalServerError, productTableName } from '../../utils/constants';
+import {
+  internalServerError, productTableName, emptyTokenError, invalidTokenError, productNotFoundError
+} from '../../utils/constants';
 import dbConnection from '../../db/dbConnection';
 import { productWithImages, productWithoutImages } from '../../mock/product.mock';
+import Product from '../../models/product';
 
 
 chai.use(chaiHttp);
@@ -21,9 +23,9 @@ let user;
 let userToken;
 
 before((done) => {
-  Users.getUser(adminEmail)
-    .then(({ rows }) => {
-      [user] = rows;
+  User.findByEmail(adminEmail)
+    .then((res) => {
+      user = res;
       userToken = jwtUtils.generateToken(user);
       done();
     })
@@ -40,19 +42,18 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       dbConnection.dbConnect(
         `
           INSERT INTO ${productTableName} (
-            owner_id, title, price, price_denomination, weight, weight_unit, description, images
+            owner_id, title, price, weight, description, images
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8
+            $1, $2, $3, $4, $5, $6
           ), (
-            $1, $9, $10, $11, $12, $13, $14, $15
+            $1, $7, $8, $9, $10, $11
           ) RETURNING *;  
         `, 
         [
-          user.id, productWithImages.title, productWithImages.price, productWithImages.priceDenomination,
-          productWithImages.weight, productWithImages.weightUnit, productWithImages.description,
-          productWithImages.images, productWithoutImages.title, productWithoutImages.price,
-          productWithoutImages.priceDenomination, productWithoutImages.weight,
-          productWithoutImages.weightUnit, productWithoutImages.description, productWithoutImages.images
+          user.id, productWithImages.title, productWithImages.price, productWithImages.weight,
+          productWithImages.description, productWithImages.images, productWithoutImages.title,
+          productWithoutImages.price, productWithoutImages.weight, productWithoutImages.description,
+          productWithoutImages.images,
         ]
       )
       .then(({ rows }) => {
@@ -109,19 +110,18 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       dbConnection.dbConnect(
         `
           INSERT INTO ${productTableName} (
-            owner_id, title, price, price_denomination, weight, weight_unit, description, images
+            owner_id, title, price, weight, description, images
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8
+            $1, $2, $3, $4, $5, $6
           ), (
-            $1, $9, $10, $11, $12, $13, $14, $15
+            $1, $7, $8, $9, $10, $11
           ) RETURNING *;  
         `,
         [
-          user.id, productWithImages.title, productWithImages.price, productWithImages.priceDenomination,
-          productWithImages.weight, productWithImages.weightUnit, productWithImages.description,
-          productWithImages.images, productWithoutImages.title, productWithoutImages.price,
-          productWithoutImages.priceDenomination, productWithoutImages.weight,
-          productWithoutImages.weightUnit, productWithoutImages.description, productWithoutImages.images
+          user.id, productWithImages.title, productWithImages.price, productWithImages.weight,
+          productWithImages.description, productWithImages.images, productWithoutImages.title,
+          productWithoutImages.price, productWithoutImages.weight, productWithoutImages.description,
+          productWithoutImages.images,
       ])
       .then(({ rows }) => {
         [localProductWithImages, localProduct] = rows;
@@ -146,7 +146,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.keys('message');
-      expect(res.body.error.message).to.equal('You need to be signed in to perform this operation');
+      expect(res.body.error.message).to.equal(emptyTokenError);
       expect(cloudApiDeleterStub.called).to.be.false;
     });
 
@@ -160,7 +160,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.keys('message');
-      expect(res.body.error.message).to.equal('Unauthorized operation, please sign in and try again');
+      expect(res.body.error.message).to.equal(invalidTokenError);
       expect(cloudApiDeleterStub.called).to.be.false;
     });
 
@@ -174,7 +174,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.keys('message');
-      expect(res.body.error.message).to.equal('Product not found');
+      expect(res.body.error.message).to.equal(productNotFoundError);
       expect(cloudApiDeleterStub.called).to.be.false;
     });
 
@@ -200,7 +200,7 @@ describe(`DELETE ${baseUrl}/:productId`, () => {
           .set('Authorization', `Bearer ${userToken}`)
           .send();
 
-        const intendedProduct = await Products.getProduct(localProductWithImages.id);
+        const intendedProduct = await Product.findById(localProductWithImages.id);
         expect(res.status).to.equal(500);
         expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
         expect(res.body.status).to.equal('error');

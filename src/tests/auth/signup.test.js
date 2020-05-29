@@ -1,12 +1,17 @@
 import chai from 'chai';
+import Sinon from 'sinon';
 import chaiHttp from 'chai-http';
 
 import app from '../../';
+import User from '../../models/user';
 import dbConnection from '../../db/dbConnection';
-import Sinon from 'sinon';
-import Users from '../../db/users';
-import { internalServerError, userTableName } from '../../utils/constants';
 import { mockUser2 } from '../../mock/user.mock';
+import {
+  internalServerError, userTableName, accountConflictError, invalidEmailError,
+  passwordValidationError, firstNameValidationError, lastNameValidationError,
+  phoneValidationError, addressValidationError, streetValidationError, stateValidationError,
+  countryValidationError,
+} from '../../utils/constants';
 
 
 chai.use(chaiHttp);
@@ -61,7 +66,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.key('message');
-      expect(res.body.error.message).to.equal('Account already exists');
+      expect(res.body.error.message).to.equal(accountConflictError);
     });
 
     it('should fail to register a user without an email', async () => {
@@ -74,7 +79,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('email');
-      expect(res.body.error[0].email).to.equal('Invalid email address');
+      expect(res.body.error[0].email).to.equal(invalidEmailError);
     });
 
     it('should fail to register a user with an invalid password', async () => {
@@ -87,7 +92,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('password');
-      expect(res.body.error[0].password).to.equal('Password must be at least 8 characters long');
+      expect(res.body.error[0].password).to.equal(passwordValidationError);
     });
     
     it('should fail to register a user with an invalid first name', async () => {
@@ -100,7 +105,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('firstName');
-      expect(res.body.error[0].firstName).to.equal('First name is required, as a sequence of letters hyphenated or not');
+      expect(res.body.error[0].firstName).to.equal(firstNameValidationError);
     });
     
     it('should fail to register a user with an invalid last name', async () => {
@@ -113,7 +118,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('lastName');
-      expect(res.body.error[0].lastName).to.equal('Last name is required, as a sequence of letters hyphenated or not');
+      expect(res.body.error[0].lastName).to.equal(lastNameValidationError);
     });
     
     it('should fail to register a user with an invalid phone', async () => {
@@ -126,7 +131,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('phone');
-      expect(res.body.error[0].phone).to.equal('Invalid phone number');
+      expect(res.body.error[0].phone).to.equal(phoneValidationError);
     });
 
     it('should fail to register a user with a too long address', async () => {
@@ -139,7 +144,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('address');
-      expect(res.body.error[0].address).to.equal('Address is required. Maximum length 150');
+      expect(res.body.error[0].address).to.equal(addressValidationError);
     });
     
     it('should fail to register a user with a too long street', async () => {
@@ -152,7 +157,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('street');
-      expect(res.body.error[0].street).to.equal('Street is required. Maximum length 80');
+      expect(res.body.error[0].street).to.equal(streetValidationError);
     });
 
     it('should fail to register a user with a too long state', async () => {
@@ -165,7 +170,7 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('state');
-      expect(res.body.error[0].state).to.equal('State is required. Maximum length 50');
+      expect(res.body.error[0].state).to.equal(stateValidationError);
     });
 
     it('should fail to register a user with no country', async () => {
@@ -178,11 +183,11 @@ describe(`POST ${signupUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array')
       expect(res.body.error[0]).to.be.an('object').and.to.have.key('country');
-      expect(res.body.error[0].country).to.equal('Country is required. Maximum length 50');
+      expect(res.body.error[0].country).to.equal(countryValidationError);
     });
     
     it('should fail to register a user due to internal server error in the controller', async () => {
-      const dbStub = Sinon.stub(Users, 'insertUser').throws(new Error());
+      const dbStub = Sinon.stub(User.prototype, 'save').throws(new Error());
       const res = await chai.request(app)
         .post(signupUrl)
         .send({ ...testUser, email: 'qauzeem2@example.com' });
@@ -196,7 +201,7 @@ describe(`POST ${signupUrl}`, () => {
     });
     
     it('should fail to register a user due to internal server error validating user exists', async () => {
-      const dbStub = Sinon.stub(Users, 'getUser').throws(new Error());
+      const dbStub = Sinon.stub(User, 'findByEmail').throws(new Error());
       const res = await chai.request(app)
         .post(signupUrl)
         .send({ ...testUser, email: 'qauzeem2@example.com' });

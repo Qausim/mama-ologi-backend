@@ -9,15 +9,13 @@ import { productTableName } from './constants';
  */
 export const prepareProductUpdateQuery = (request) => {
   const { productId } = request.params;
-  const expectedFields = ['title', 'price', 'priceDenomination', 'weight', 'weightUnit', 'description', 'images'];
+  const expectedFields = ['title', 'price', 'weight', 'description', 'images', 'discount', 'stock'];
   const body = [];
   expectedFields.forEach((field) => {
     const value = request.body[field];
     if (value) {
-      // eslint-disable-next-line no-nested-ternary
-      const key = field === 'priceDenomination' ? 'price_denomination' : field === 'weightUnit' ? 'weight_unit' : field;
       body.push([
-        key, typeof value === 'string' ? value.trim() : value,
+        field, typeof value === 'string' ? value.trim() : value,
       ]);
     }
   });
@@ -28,7 +26,8 @@ export const prepareProductUpdateQuery = (request) => {
     preparedQuery += index === body.length - 1 ? ' ' : ', ';
     preparedData.push(value);
   });
-  preparedQuery = `UPDATE ${productTableName} SET ${preparedQuery}WHERE id = $${preparedData.length + 1} RETURNING *`;
+  preparedQuery = `UPDATE ${productTableName} SET ${preparedQuery}WHERE id = $${preparedData.length + 1}
+  AND deleted = false RETURNING id, title, price, owner_id, discount, weight, description, stock, images`;
   preparedData.push(productId);
   return { preparedQuery, preparedData };
 };

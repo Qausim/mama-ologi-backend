@@ -4,12 +4,17 @@ import sinon from 'sinon';
 
 import app from '../..';
 import jwtUtils from '../../utils/jwtUtils';
-import Users from '../../db/users';
-import Products from '../../db/products';
+import User from '../../models/user';
 import cloudinary from '../../config/cloudinaryConfig';
 import envVariables from '../../environment';
-import { internalServerError, productTableName } from '../../utils/constants';
+import {
+  internalServerError, productTableName, productNoImageError, emptyTokenError,
+  invalidTokenError, productTitleValidationError, productPriceValidationError, 
+  productWeightValidationError, productDescriptionValidationError, maxImagesError,
+  maxImageSizeAndFormatError, imageUploadError, productDiscountValidationError, productStockValidationError,
+} from '../../utils/constants';
 import dbConnection from '../../db/dbConnection';
+import Product from '../../models/product';
 
 
 chai.use(chaiHttp);
@@ -25,9 +30,9 @@ let userToken;
 let user;
 
 before((done) => {
-  Users.getUser(adminEmail)
-    .then(({ rows }) => {
-      [user] = rows;
+  User.findByEmail(adminEmail)
+    .then((res) => {
+      user = res;
       userToken = jwtUtils.generateToken(user);
 
       return dbConnection.dbConnect(
@@ -81,8 +86,10 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
       expect(res.body.data.title).to.equal(newTitle);
       expect(res.body.data.id).to.equal(product.id);
     });
@@ -98,49 +105,52 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
       expect(res.body.data.price).to.equal(newPrice);
       expect(res.body.data.id).to.equal(product.id);
     });
-
-    it('should update the title and price of a product', async () => {
-      const newTitle = 'updated title for fake pap the second time';
-      const newPrice = (130.5).toFixed(2);
+    
+    it('should update the stock of a product', async () => {
+      const newStock = 8;
       const res = await chai.request(app)
         .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', `Bearer ${userToken}`)
         .set('Content-Type', 'multipart/form-data')
-        .field('title', newTitle)
-        .field('price', newPrice);
+        .field('stock', newStock);
 
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
-      expect(res.body.data.title).to.equal(newTitle);
-      expect(res.body.data.price).to.equal(newPrice);
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
+      expect(res.body.data.stock).to.equal(newStock);
       expect(res.body.data.id).to.equal(product.id);
     });
 
-    it('should update the priceDenomination of a product', async () => {
-      const newDenomination = 'NGN';
+    it('should update the discount of a product', async () => {
+      const newDiscount = 0.33;
       const res = await chai.request(app)
         .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', `Bearer ${userToken}`)
         .set('Content-Type', 'multipart/form-data')
-        .field('priceDenomination', newDenomination);
+        .field('discount', newDiscount);
 
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
-      expect(res.body.data.price_denomination).to.equal(newDenomination);
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
+      expect(res.body.data.discount).to.equal(newDiscount.toString());
       expect(res.body.data.id).to.equal(product.id);
     });
-
+    
     it('should update the weight of a product', async () => {
       const newWeight = (50).toFixed(2);
       const res = await chai.request(app)
@@ -152,26 +162,11 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
       expect(res.body.data.weight).to.equal(newWeight);
-      expect(res.body.data.id).to.equal(product.id);
-    });
-
-    it('should update the weightUnit of a product', async () => {
-      const newWeightUnit = 'kg';
-      const res = await chai.request(app)
-        .patch(`${baseUrl}/${product.id}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .set('Content-Type', 'multipart/form-data')
-        .field('weightUnit', newWeightUnit);
-
-      expect(res.status).to.equal(200);
-      expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
-      expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
-      expect(res.body.data.weight_unit).to.equal(newWeightUnit);
       expect(res.body.data.id).to.equal(product.id);
     });
 
@@ -186,8 +181,10 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
       expect(res.body.data.description).to.equal(newDescription);
       expect(res.body.data.id).to.equal(product.id);
     });
@@ -202,11 +199,15 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
       expect(res.body.data.images).to.have.length(1);
       res.body.data.images.forEach((img) => {
-        expect(img).to.be.a('string').and.satisfy((url) => url.startsWith(fakeCloudinaryBaseUrl) && url.includes('camera'));
+        expect(img).to.be.a('string').and.satisfy(
+          (url) => url.startsWith(fakeCloudinaryBaseUrl) && url.includes('camera')
+        );
       });
       expect(res.body.data.id).to.equal(productWithImages.id);
       expect(uploaderStub.called).to.be.true;
@@ -227,8 +228,10 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'weight',
-        'description', 'images', 'price_denomination', 'weight_unit');
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'discount',
+        'weight', 'description', 'images', 'stock'
+      );
       expect(res.body.data.images).to.have.length(1);
       expect(res.body.data.images[0]).to.equal(productImages[0]);
       expect(res.body.data.id).to.equal(productWithImages.id);
@@ -267,7 +270,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.have.key('message');
-      expect(res.body.error.message).to.be.equal('You need to be signed in to perform this operation');
+      expect(res.body.error.message).to.be.equal(emptyTokenError);
     });
 
     it('should fail to update a product when invalid token supplied', async () => {
@@ -281,7 +284,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.have.key('message');
-      expect(res.body.error.message).to.be.equal('Unauthorized operation, please sign in and try again');
+      expect(res.body.error.message).to.be.equal(invalidTokenError);
     });
 
     it('should fail to update a product with an empty title string', async () => {
@@ -296,7 +299,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ title }) => title);
-        return error.title === 'Please enter a valid title for the product (at least 6 characters)';
+        return error.title === productTitleValidationError;
       });
     });
 
@@ -312,7 +315,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ title }) => title);
-        return error.title === 'Please enter a valid title for the product (at least 6 characters)';
+        return error.title === productTitleValidationError;
       });
     });
 
@@ -328,7 +331,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ title }) => title);
-        return error.title === 'Please enter a valid title for the product (at least 6 characters)';
+        return error.title === productTitleValidationError;
       });
     });
 
@@ -345,7 +348,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
         expect(res.body.status).to.equal('error');
         expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
           const error = errors.find(({ title }) => title);
-          return error.title === 'Please enter a valid title for the product (at least 6 characters)';
+          return error.title === productTitleValidationError;
         });
       });
 
@@ -361,7 +364,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ price }) => price);
-        return error.price === 'Please enter a valid price (numeric) for the product';
+        return error.price === productPriceValidationError;
       });
     });
 
@@ -377,55 +380,87 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ price }) => price);
-        return error.price === 'Please enter a valid price (numeric) for the product';
+        return error.price === productPriceValidationError;
       });
     });
-
-    it('should fail to update a product with an empty priceDenomination string', async () => {
+    
+    it('should fail to update a product with a empty stock string', async () => {
       const res = await chai.request(app)
         .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', userToken)
         .set('Content-Type', 'multipart/form-data')
-        .field('priceDenomination', '');
+        .field('stock', '');
 
       expect(res.status).to.equal(400);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
-        const error = errors.find(({ priceDenomination }) => priceDenomination);
-        return error.priceDenomination === 'Please choose a denomination for the price';
+        const error = errors.find(({ stock }) => stock);
+        return error.stock === productStockValidationError;
       });
     });
-
-    it('should fail to update a product with a priceDenomination string containing only spaces', async () => {
+    
+    it('should fail to update a product with a negative stock', async () => {
       const res = await chai.request(app)
         .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', userToken)
         .set('Content-Type', 'multipart/form-data')
-        .field('priceDenomination', '        ');
+        .field('stock', -10);
 
       expect(res.status).to.equal(400);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
-        const error = errors.find(({ priceDenomination }) => priceDenomination);
-        return error.priceDenomination === 'Please choose a denomination for the price';
+        const error = errors.find(({ stock }) => stock);
+        return error.stock === productStockValidationError;
       });
     });
-
-    it('should fail to update a product with a priceDenomination string besides "NGN" and "USD"', async () => {
+    
+    it('should fail to update a product with a non integer stock', async () => {
       const res = await chai.request(app)
         .patch(`${baseUrl}/${product.id}`)
         .set('Authorization', userToken)
         .set('Content-Type', 'multipart/form-data')
-        .field('priceDenomination', 'GHC');
-  
+        .field('stock', 2.5);
+
       expect(res.status).to.equal(400);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
-        const error = errors.find(({ priceDenomination }) => priceDenomination);
-        return error.priceDenomination === 'Please choose a denomination for the price';
+        const error = errors.find(({ stock }) => stock);
+        return error.stock === productStockValidationError;
+      });
+    });
+    
+    it('should fail to update a product with a negative discount', async () => {
+      const res = await chai.request(app)
+        .patch(`${baseUrl}/${product.id}`)
+        .set('Authorization', userToken)
+        .set('Content-Type', 'multipart/form-data')
+        .field('discount', -0.5);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+      expect(res.body.status).to.equal('error');
+      expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
+        const error = errors.find(({ discount }) => discount);
+        return error.discount === productDiscountValidationError;
+      });
+    });
+    
+    it('should fail to update a product with an above 1 discount', async () => {
+      const res = await chai.request(app)
+        .patch(`${baseUrl}/${product.id}`)
+        .set('Authorization', userToken)
+        .set('Content-Type', 'multipart/form-data')
+        .field('discount', 1.5);
+
+      expect(res.status).to.equal(400);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
+      expect(res.body.status).to.equal('error');
+      expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
+        const error = errors.find(({ discount }) => discount);
+        return error.discount === productDiscountValidationError;
       });
     });
 
@@ -441,55 +476,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ weight }) => weight);
-        return error.weight === 'Please enter a valid weight (numeric) value for the product';
-      });
-    });
-
-    it('should fail to update a product with an empty weightUnit string', async () => {
-      const res = await chai.request(app)
-        .patch(`${baseUrl}/${product.id}`)
-        .set('Authorization', userToken)
-        .set('Content-Type', 'multipart/form-data')
-        .field('weightUnit', '');
-
-      expect(res.status).to.equal(400);
-      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
-      expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
-        const error = errors.find(({ weightUnit }) => weightUnit);
-        return error.weightUnit === 'Please choose unit for the weight, "g" or "kg"';
-      });
-    });
-
-    it('should fail to update a product with a weightUnit string containing only spaces', async () => {
-      const res = await chai.request(app)
-        .patch(`${baseUrl}/${product.id}`)
-        .set('Authorization', userToken)
-        .set('Content-Type', 'multipart/form-data')
-        .field('weightUnit', '      ');
-
-      expect(res.status).to.equal(400);
-      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
-      expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
-        const error = errors.find(({ weightUnit }) => weightUnit);
-        return error.weightUnit === 'Please choose unit for the weight, "g" or "kg"';
-      });
-    });
-
-    it('should fail to update a product with a weightUnit string besides "g" and "kg"', async () => {
-      const res = await chai.request(app)
-        .patch(`${baseUrl}/${product.id}`)
-        .set('Authorization', userToken)
-        .set('Content-Type', 'multipart/form-data')
-        .field('weightUnit', 'lb');
-
-      expect(res.status).to.equal(400);
-      expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
-      expect(res.body.status).to.equal('error');
-      expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
-        const error = errors.find(({ weightUnit }) => weightUnit);
-        return error.weightUnit === 'Please choose unit for the weight, "g" or "kg"';
+        return error.weight === productWeightValidationError;
       });
     });
 
@@ -505,7 +492,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ description }) => description);
-        return error.description === "Please provide the product's description";
+        return error.description === productDescriptionValidationError;
       });
     });
 
@@ -521,7 +508,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('array').and.to.satisfy((errors) => {
         const error = errors.find(({ description }) => description);
-        return error.description === "Please provide the product's description";
+        return error.description === productDescriptionValidationError;
       });
     });
 
@@ -540,7 +527,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.property('message');
-      expect(res.body.error.message).to.equal('Maximum of 4 image files allowed');
+      expect(res.body.error.message).to.equal(maxImagesError);
       expect(uploaderStub.called).to.be.false;
       expect(cloudApiDeleterStub.called).to.be.false;
       
@@ -558,7 +545,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.property('message');
-      expect(res.body.error.message).to.equal('Only jpeg and png images, each not greater than 2mb, are allowed');
+      expect(res.body.error.message).to.equal(maxImageSizeAndFormatError);
       expect(uploaderStub.called).to.be.false;
       expect(cloudApiDeleterStub.called).to.be.false;
       
@@ -575,7 +562,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.property('message');
-      expect(res.body.error.message).to.equal('Only jpeg and png images, each not greater than 2mb, are allowed');
+      expect(res.body.error.message).to.equal(maxImageSizeAndFormatError);
       expect(uploaderStub.called).to.be.false;
       expect(cloudApiDeleterStub.called).to.be.false;
     });
@@ -590,7 +577,7 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.have.property('message');
-      expect(res.body.error.message).to.equal('There must be at least one image for a product');
+      expect(res.body.error.message).to.equal(productNoImageError);
       expect(cloudApiDeleterStub.called).to.be.false;
     });
     
@@ -610,12 +597,12 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.have.property('message');
-      expect(res.body.error.message).to.equal('Maximum of 4 image files allowed');
+      expect(res.body.error.message).to.equal(maxImagesError);
       expect(cloudApiDeleterStub.called).to.be.false;
     });
     
     it('should encounter an error updating product in database', async () => {
-      const dbStub = sinon.stub(Products, 'updateProduct').throws(new Error());
+      const dbStub = sinon.stub(Product, 'updateProduct').throws(new Error());
       
       const res = await chai.request(app)
       .patch(`${baseUrl}/${product.id}`)
@@ -647,11 +634,11 @@ describe(`PATCH ${baseUrl}/:productId`, () => {
         expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
         expect(res.body.status).to.equal('error');
         expect(res.body.error).to.be.an('object').and.to.have.property('message');
-        expect(res.body.error.message).to.equal('Error uploading images');
+        expect(res.body.error.message).to.equal(imageUploadError);
         expect(uploaderStub.called).to.be.true;
       });
       
-      it('should an error while deleting existing product images', async () => {
+      it('should encounter an error while deleting existing product images', async () => {
         cloudApiDeleterStub.restore();
         cloudApiDeleterStub = sinon.stub(cloudinary.api, 'delete_resources').throws(new Error());
         const res = await chai.request(app)

@@ -5,9 +5,12 @@ import jwtUtils from '../utils/jwtUtils';
 import authValidation from '../validation/authValidation';
 import userValidation from '../validation/userValidation';
 import { extractValidationErrors } from '../utils/errorUtils';
-import Users from '../db/users';
-import { emptyTokenError, invalidTokenError } from '../utils/constants';
+import User from '../models/user';
+import { emptyTokenError, invalidTokenError, signinError, accountConflictError } from '../utils/constants';
+import { getDebugger, debugHelper } from '../utils/debugUtils';
 
+
+const debug = getDebugger('app:AuthMiddleware');
 
 /**
  * Defines the authentication middlewares
@@ -24,7 +27,7 @@ export default class AuthMiddleware {
       (request, response, next) => {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
-          return Responses.unauthorizedError(response, 'Invalid email or password');
+          return Responses.unauthorizedError(response, signinError);
         }
         return next();
       },
@@ -46,6 +49,7 @@ export default class AuthMiddleware {
       request.user = { userId, userEmail };
       next();
     } catch (error) {
+      debugHelper.error(debug, error);
       return Responses.unauthorizedError(response, invalidTokenError);
     }
   }
@@ -85,10 +89,11 @@ export default class AuthMiddleware {
   static async validateAccountDoesNotExist(request, response, next) {
     const { body: { email } } = request;
     try {
-      const userRes = await Users.getUser(email);
-      if (userRes.rowCount) return Responses.badRequestError(response, { message: 'Account already exists' }, 409);
+      const user = await User.findByEmail(email);
+      if (user) return Responses.badRequestError(response, { message: accountConflictError }, 409);
       next();
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
