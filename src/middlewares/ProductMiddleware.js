@@ -3,13 +3,18 @@
 import { validationResult } from 'express-validator';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
-import Products from '../db/products';
-import { createProductValidations, updateProductValidations, wishlistValidation } from '../validation/productValidation';
+import {
+  createProductValidations, updateProductValidations, wishlistValidation,
+} from '../validation/productValidation';
 import { extractValidationErrors } from '../utils/errorUtils';
-import { productNotFoundError } from '../utils/constants';
+import {
+  productNotFoundError, productNoImageError, maxImagesError, maxImageSizeAndFormatError,
+} from '../utils/constants';
+import Product from '../models/product';
+import { getDebugger, debugHelper } from '../utils/debugUtils';
 
 
-const maxImageError = 'Maximum of 4 image files allowed';
+const debug = getDebugger('app:ProductMiddleware');
 /**
  * Defines middlewares for the product routes
  */
@@ -21,6 +26,7 @@ export default class ProductMiddleware {
   static validateCreateProductData() {
     return [
       ...Object.values(createProductValidations),
+      updateProductValidations.discount,
       (request, response, next) => {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {
@@ -47,8 +53,8 @@ export default class ProductMiddleware {
     });
 
     if (!(sparedImages.length + productImages.length)) {
-      error.message = 'There must be at least one image for a product';
-    } else if (sparedImages.length + productImages.length > 4) error.message = maxImageError;
+      error.message = productNoImageError;
+    } else if (sparedImages.length + productImages.length > 4) error.message = maxImagesError;
 
     return { imagesToDelete, sparedImages };
   }
@@ -79,16 +85,17 @@ export default class ProductMiddleware {
       // Format it to be an array in all cases
       productImages = productImages[0] ? productImages : [productImages];
       if (productImages.length > 4) {
-        return Responses.badRequestError(response, { message: maxImageError });
+        return Responses.badRequestError(response, { message: maxImagesError });
       }
       const wrongFormatOrTooHeavy = productImages
         .find(({ type, size }) => !['image/jpeg', 'image/png'].includes(type) || size > 2 * 1024 * 1024);
       if (wrongFormatOrTooHeavy) {
-        return Responses.badRequestError(response, { message: 'Only jpeg and png images, each not greater than 2mb, are allowed' });
+        return Responses.badRequestError(response, { message: maxImageSizeAndFormatError });
       }
 
       CloudinaryService.uploadImages(request, productImages, remainingImages, next);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -104,13 +111,13 @@ export default class ProductMiddleware {
     const { productId } = request.params;
     try {
       // Ensure the product exists else return a 404 error
-      const res = await Products.getProduct(productId, request.method.toLowerCase());
-      if (!res.rowCount) return Responses.notFoundError(response, productNotFoundError);
+      const product = await Product.findById(productId, request.method.toLowerCase());
+      if (!product) return Responses.notFoundError(response, productNotFoundError);
       // If product exists attach it to the request object and proceed
-      const { rows: [product] } = res;
       request.product = product;
       next();
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }

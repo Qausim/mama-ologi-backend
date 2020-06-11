@@ -3,8 +3,8 @@ import chaiHttp from 'chai-http';
 import sinon from 'sinon';
 
 import app from '../..';
-import Products from '../../db/products';
 import { internalServerError } from '../../utils/constants';
+import Product from '../../models/product';
 
 
 const { expect } = chai;
@@ -19,8 +19,7 @@ describe(`GET ${url}`, () => {
         .get(url)
         .send();
       
-      const getRes = await Products.getProducts(1);
-      const { rows: dbProducts } = getRes;
+      const dbProducts = await Product.getPaginatedList(1);
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
@@ -33,8 +32,7 @@ describe(`GET ${url}`, () => {
         .get(`${url}?page=1`)
         .send();
       
-      const getRes = await Products.getProducts(1);
-      const { rows: dbProducts } = getRes;
+      const dbProducts = await Product.getPaginatedList(1);
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
@@ -59,7 +57,7 @@ describe(`GET ${url}`, () => {
     const queryParameterError = 'Query parameter value for "page" must be a number greater than zero';
 
     it('should encounter an error retrieving products', async () => {
-      const dbStub = sinon.stub(Products, 'getProducts').throws(new Error());
+      const dbStub = sinon.stub(Product, 'getPaginatedList').throws(new Error());
       const res = await chai.request(app)
         .get(url)
         .send();

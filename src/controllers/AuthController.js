@@ -1,10 +1,14 @@
 import bcrypt from 'bcrypt';
 
-import Users from '../db/users';
-import Responses from '../utils/responseUtils';
+import User from '../models/user';
+import { getDebugger, debugHelper } from '../utils/debugUtils';
 import jwtUtils from '../utils/jwtUtils';
+import Responses from '../utils/responseUtils';
 import { hashPassword } from '../utils/authUtils';
+import { signinError } from '../utils/constants';
 
+
+const debug = getDebugger('app:AuthController');
 
 /**
  * Defines the controllers for authentication routes
@@ -20,17 +24,17 @@ export default class AuthController {
   static async signin(request, response, next) {
     try {
       const { body: { email, password } } = request;
-      const userRes = await Users.getUser(email);
-      if (userRes.rowCount) {
-        const { rows: [user] } = userRes;
+      const user = await User.findByEmail(email);
+      if (user) {
         const verified = await bcrypt.compare(password, user.password);
         user.token = jwtUtils.generateToken(user);
         delete user.password; delete user.id;
         if (verified) return Responses.success(response, user);
       }
 
-      Responses.unauthorizedError(response, 'Invalid email or password');
+      Responses.unauthorizedError(response, signinError);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error());
     }
   }
@@ -48,16 +52,17 @@ export default class AuthController {
 
     try {
       const hashedPassword = await hashPassword(password);
-      const res = await Users
-        .insertUser(
-          email, hashedPassword, firstName, lastName, phone, address, street, state, country,
-        );
+      const user = new User(
+        email, hashedPassword, firstName, lastName, phone, address, street, state, country,
+      );
+      const res = await user.save();
 
-      res.rows[0].wishlist = [];
-      res.rows[0].cart = [];
-      res.rows[0].token = jwtUtils.generateToken(res.rows[0]);
-      return Responses.success(response, res.rows[0], 201);
+      res.wishlist = [];
+      res.cart = [];
+      res.token = jwtUtils.generateToken(res);
+      return Responses.success(response, res, 201);
     } catch (error) {
+      debugHelper.error(debug, error);
       next(new Error('Unable to create account'));
     }
   }

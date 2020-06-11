@@ -3,9 +3,9 @@ import chaiHttp from 'chai-http';
 import sinon from 'sinon';
 
 import app from '../..';
-import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
-import { internalServerError, productTableName } from '../../utils/constants';
+import { internalServerError, productTableName, productNotFoundError } from '../../utils/constants';
+import Product from '../../models/product';
 
 
 const { expect } = chai;
@@ -37,13 +37,13 @@ describe(`GET ${baseUrl}/:productId`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('object');
-      expect(res.body.data).to.have.keys('id', 'owner_id', 'title', 'price', 'price_denomination',
-      'weight', 'weight_unit', 'description', 'images', 'first_name', 'last_name', 'phone');
+      expect(res.body.data).to.have.keys(
+        'id', 'owner_id', 'title', 'price', 'weight', 'description',
+        'images', 'first_name', 'last_name', 'phone', 'stock', 'discount'
+      );
       expect(res.body.data.description).to.be.a('string');
       expect(res.body.data.price).to.be.a('string').and.to.equal(product.price);
-      expect(res.body.data.price_denomination).to.equal(product.price_denomination);
       expect(res.body.data.weight).to.equal(product.weight);
-      expect(res.body.data.weight_unit).to.equal(product.weight_unit);
       expect(res.body.data.images).to.be.an('array').and.to.have.length(product.images.length);
     });
   });
@@ -58,11 +58,11 @@ describe(`GET ${baseUrl}/:productId`, () => {
       expect(res.body).to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.have.key('message');
-      expect(res.body.error.message).to.equal('Product not found');
+      expect(res.body.error.message).to.equal(productNotFoundError);
     });
 
-    it('should encounter an error retrieving products', async () => {
-      const dbStub = sinon.stub(Products, 'getProduct').throws(new Error());
+    it('should encounter an error retrieving a single product', async () => {
+      const dbStub = sinon.stub(Product, 'findById').throws(new Error());
       const res = await chai.request(app)
         .get(`${baseUrl}/${product.id}`)
         .send();

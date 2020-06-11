@@ -1,7 +1,6 @@
 import chai from 'chai';
 import chaiHttp from 'chai-http';
 
-import Products from '../../db/products';
 import dbConnection from '../../db/dbConnection';
 import { mockUser } from '../../mock/user.mock';
 import jwtUtils from '../../utils/jwtUtils';
@@ -10,6 +9,7 @@ import {
   emptyTokenError, invalidTokenError, internalServerError, userTableName
 } from '../../utils/constants';
 import Sinon from 'sinon';
+import User from '../../models/user';
 
 
 chai.use(chaiHttp);
@@ -37,7 +37,7 @@ describe(`GET ${wishlistUrl}`, () => {
         .set('Authorization', 'Bearer ' + user.token)
         .send();
       
-      const dbWishes = await Products.getUserWishlist(user.id);
+      const dbWishes = await User.getWishlist(user.id);
       expect(res.status).to.be.equal(200);
       expect(res.body).to.be.an('object').and.have.keys('status', 'data');
       expect(res.body.status).to.equal('success');
@@ -83,7 +83,7 @@ describe(`GET ${wishlistUrl}`, () => {
     });
 
     it('should fail to fetch user\s wishlist due to server error', async () => {
-      const dbStub = Sinon.stub(Products, 'getUserWishlist').throws(new Error());
+      const dbStub = Sinon.stub(User, 'getWishlist').throws(new Error());
       const res = await chai.request(app)
         .get(wishlistUrl)
         .set('Authorization', 'Bearer ' + user.token)
@@ -94,6 +94,8 @@ describe(`GET ${wishlistUrl}`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.to.have.key('message');
       expect(res.body.error.message).to.equal(internalServerError);
+
+      dbStub.restore();
     });
   });
 })

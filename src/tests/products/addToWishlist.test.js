@@ -5,11 +5,12 @@ import app from '../..';
 import { mockUser } from '../../mock/user.mock';
 import dbConnection from '../../db/dbConnection';
 import jwtUtils from '../../utils/jwtUtils';
-import Products from '../../db/products';
 import {
-  quantityValidationError, internalServerError, productTableName, userTableName
+  quantityValidationError, internalServerError, productTableName,
+  userTableName, emptyTokenError, invalidTokenError, productNotFoundError
 } from '../../utils/constants';
 import Sinon from 'sinon';
+import Product from '../../models/product';
 
 const fixFloat = (num) => parseFloat(num).toFixed(2);
 
@@ -96,7 +97,7 @@ describe(`${productsUrl}/:productId/wishlist`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.have.property('message');
-      expect(res.body.error.message).to.equal('You need to be signed in to perform this operation');
+      expect(res.body.error.message).to.equal(emptyTokenError);
     });
     
     it('should fail to add product to user\'s wishlist for invalid token', async () => {
@@ -109,7 +110,7 @@ describe(`${productsUrl}/:productId/wishlist`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.have.property('message');
-      expect(res.body.error.message).to.equal('Unauthorized operation, please sign in and try again');
+      expect(res.body.error.message).to.equal(invalidTokenError);
     });
     
     it('should fail to add product to user\'s wishlist for product that doesn\'t exist', async () => {
@@ -122,7 +123,7 @@ describe(`${productsUrl}/:productId/wishlist`, () => {
       expect(res.body).to.be.an('object').and.to.have.keys('status', 'error');
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.have.property('message');
-      expect(res.body.error.message).to.equal('Product not found');
+      expect(res.body.error.message).to.equal(productNotFoundError);
     });
     
     it('should fail to add product to user\'s wishlist with invalid quantity', async () => {
@@ -140,7 +141,7 @@ describe(`${productsUrl}/:productId/wishlist`, () => {
     });
     
     it('should fail to add product to user\'s wishlist due to error in controller', async () => {
-      const dbStub = Sinon.stub(Products, 'addToWishlist').throws(new Error());
+      const dbStub = Sinon.stub(Product, 'addToWishList').throws(new Error());
       const res = await chai.request(app)
         .post(`${productsUrl}/${product.id}/wishlist`)
         .set('Authorization', `Bearer ${user.token}`)
@@ -151,6 +152,8 @@ describe(`${productsUrl}/:productId/wishlist`, () => {
       expect(res.body.status).to.equal('error');
       expect(res.body.error).to.be.an('object').and.have.property('message');
       expect(res.body.error.message).to.equal(internalServerError);
+      
+      dbStub.restore();
     });
   });
 })

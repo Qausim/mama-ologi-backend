@@ -32,7 +32,7 @@ export const createUserTableQuery = `
     street VARCHAR(80),
     state VARCHAR(50),
     country VARCHAR(50),
-    role ${roleTypeName} DEFAULT '${customerRole}'
+    role ${roleTypeName} DEFAULT '${customerRole}'::${roleTypeName}
   );
 `;
 
@@ -51,10 +51,11 @@ export const createProductTableQuery = `
     owner_id BIGINT REFERENCES ${userTableName} (id) NOT NULL,
     title VARCHAR(50) NOT NULL,
     price NUMERIC(17, 2) NOT NULL,
-    price_denomination VARCHAR(3) DEFAULT 'NGN' NOT NULL,
+    discount NUMERIC(3, 2) NOT NULL DEFAULT 0,
     weight NUMERIC(11, 2) NOT NULL,
-    weight_unit VARCHAR(10) NOT NULL,
     description VARCHAR(250) NOT NULL,
+    deleted BOOLEAN NOT NULL DEFAULT false,
+    stock SMALLINT NOT NULL DEFAULT 0,
     images TEXT[] DEFAULT '{}'
   );
 `;
@@ -111,16 +112,43 @@ export const createGetCartFunctionQuery = `
   $cart$ LANGUAGE plpgsql;
 `;
 
-export const dropRoleTable = `DROP TYPE IF EXISTS ${roleTypeName};`;
+export const dropRoleType = `DROP TYPE IF EXISTS ${roleTypeName};`;
 export const dropUserTable = `DROP TABLE IF EXISTS ${userTableName};`;
 export const dropProductTable = `DROP TABLE IF EXISTS ${productTableName};`;
 export const dropWishlistItemsTable = `DROP TABLE IF EXISTS ${wishlistTableName}`;
 export const dropCartTable = `DROP TABLE IF EXISTS ${cartTableName}`;
 
+
 // Other constants
-export const internalServerError = 'Internal server error';
-export const quantityValidationError = 'quantity is required and should be an integer';
-export const emptyTokenError = 'You need to be signed in to perform this operation';
-export const invalidTokenError = 'Unauthorized operation, please sign in and try again';
-export const productCreationError = 'Unable to insert product, please ensure you have appropriate access';
+const generateRequiredAndOfMaxLengthError = (
+  fieldName, maxLength,
+) => `${fieldName} is required. Maximum length ${maxLength}`;
+const nameError = ' name is required, as a sequence of letters hyphenated or not';
+
+export const signinError = 'Invalid email or password';
 export const productNotFoundError = 'Product not found';
+export const invalidEmailError = 'Invalid email address';
+export const imageUploadError = 'Error uploading images';
+export const lastNameValidationError = `Last${nameError}`;
+export const internalServerError = 'Internal server error';
+export const phoneValidationError = 'Invalid phone number';
+export const firstNameValidationError = `First${nameError}`;
+export const accountConflictError = 'Account already exists';
+export const maxImagesError = 'Maximum of 4 image files allowed';
+export const emptyTokenError = 'You need to be signed in to perform this operation';
+export const productNoImageError = 'There must be at least one image for a product';
+export const passwordValidationError = 'Password must be at least 8 characters long';
+export const stateValidationError = generateRequiredAndOfMaxLengthError('State', 50);
+export const streetValidationError = generateRequiredAndOfMaxLengthError('Street', 80);
+export const productDiscountValidationError = 'Discount must be a number from 0 through to 1';
+export const quantityValidationError = 'quantity is required and should be an integer';
+export const invalidTokenError = 'Unauthorized operation, please sign in and try again';
+export const countryValidationError = generateRequiredAndOfMaxLengthError('Country', 50);
+export const addressValidationError = generateRequiredAndOfMaxLengthError('Address', 150);
+export const productDescriptionValidationError = "Please provide the product's description";
+export const productPriceValidationError = 'Please enter a valid price (numeric) for the product';
+export const productStockValidationError = 'A non zero whole number should be provided as "stock"';
+export const productWeightValidationError = 'Please enter a valid weight (numeric) value for the product';
+export const productCreationError = 'Unable to insert product, please ensure you have appropriate access';
+export const maxImageSizeAndFormatError = 'Only jpeg and png images, each not greater than 2mb, are allowed';
+export const productTitleValidationError = 'Please enter a valid title for the product (at least 6 characters)';

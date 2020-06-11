@@ -2,13 +2,13 @@ import chai from 'chai';
 import chaiHttp from 'chai-http';
 
 import app from '../../';
-import Products from '../../db/products';
-import Users from '../../db/users';
+import User from '../../models/user';
 import { mockUser } from '../../mock/user.mock';
 import jwtUtils from '../../utils/jwtUtils';
 import {
   emptyTokenError, invalidTokenError, productNotFoundError, internalServerError
 } from '../../utils/constants';
+import Product from '../../models/product';
 
 
 const fixFloat = (num) => num.toFixed(2);
@@ -21,16 +21,16 @@ let products;
 let userToken;
 
 before((done) => {
-  Users.getUser(mockUser.email)
-    .then(({ rows }) => {
-      user = rows[0];
+  User.findByEmail(mockUser.email)
+    .then((res) => {
+      user = res;
       userToken = jwtUtils.generateToken(user);
-      return Products.getProducts(1);
+      return Product.getPaginatedList(1);
     })
-    .then(({ rows }) => {
-      products = rows.slice(0, 2);
+    .then((list) => {
+      products = list.slice(0, 2);
       return Promise.all(
-        products.map(async(product) => await Products.addToCart(user.id, product.id, 2))
+        products.map(async(product) => await Product.addToCart(user.id, product.id, 2))
       );
     })
     .then(() => done())

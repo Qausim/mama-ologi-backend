@@ -1,6 +1,7 @@
 import dbConnection from './dbConnection';
 import envVariables from '../environment';
 import { hashPassword } from '../utils/authUtils';
+import { getDebugger, debugHelper } from '../utils/debugUtils';
 import {
   createUserRoleType, createUserTableQuery,
   insertAdminQuery, createProductTableQuery, createWishlistQuery,
@@ -8,6 +9,7 @@ import {
 } from '../utils/constants';
 
 
+const debug = getDebugger('app:migration');
 const { adminEmail, adminPassword: password } = envVariables;
 
 (async () => {
@@ -22,7 +24,6 @@ const { adminEmail, adminPassword: password } = envVariables;
     await dbConnection.dbConnect(createCartQuery);
     await dbConnection.dbConnect(createGetCartFunctionQuery);
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.log(error.message);
+    debugHelper.error(debug, error);
   }
 })();

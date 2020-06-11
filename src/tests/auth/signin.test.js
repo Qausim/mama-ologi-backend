@@ -3,28 +3,23 @@ import chaiHttp from 'chai-http';
 import sinon from 'sinon';
 
 import app from '../../';
-import envVariables from '../../environment';
-import Users from '../../db/users';
-import { internalServerError } from '../../utils/constants';
+import User from '../../models/user';
+import { mockUser } from '../../mock/user.mock';
+import { internalServerError, signinError } from '../../utils/constants';
 
 
 chai.use(chaiHttp);
 const { expect } = chai;
-
-const { adminEmail, adminPassword } = envVariables;
 const baseUrl = '/api/v1/auth';
 const signinUrl = `${baseUrl}/signin`;
-const signinError = 'Invalid email or password';
+const { email: userEmail, password: userPassword } = mockUser;
 
 describe(signinUrl, () => {
   describe('SUCCESS', () => {
     it('should sign in a user successfully', async () => {
       const res = await chai.request(app)
         .post(signinUrl)
-        .send({
-          email: adminEmail,
-          password: adminPassword
-        });
+        .send({ email: userEmail, password: userPassword });
 
       expect(res.status).to.equal(200);
       expect(res.body).to.be.an('object');
@@ -33,7 +28,7 @@ describe(signinUrl, () => {
       expect(res.body.data).to.be.an('object');
       expect(res.body.data).to.have.property('email');
       expect(res.body.data).to.have.property('token');
-      expect(res.body.data.email).to.equal(adminEmail);
+      expect(res.body.data.email).to.equal(userEmail);
     });
   });
 
@@ -43,7 +38,7 @@ describe(signinUrl, () => {
         .post(signinUrl)
         .send({
           email: 'admin@gmail',
-          password: adminPassword
+          password: userPassword
         });
 
       expect(res.status).to.equal(401);
@@ -58,7 +53,7 @@ describe(signinUrl, () => {
       const res = await chai.request(app)
         .post(signinUrl)
         .send({
-          email: adminEmail,
+          email: userEmail,
           password: 'admin'
         });
 
@@ -75,7 +70,7 @@ describe(signinUrl, () => {
         .post(signinUrl)
         .send({
           email: 'admin@gmail.com',
-          password: adminPassword
+          password: userPassword
         });
 
       expect(res.status).to.equal(401);
@@ -90,7 +85,7 @@ describe(signinUrl, () => {
       const res = await chai.request(app)
         .post(signinUrl)
         .send({
-          email: adminEmail,
+          email: userEmail,
           password: 'ayindeolohunorin'
         });
 
@@ -103,12 +98,12 @@ describe(signinUrl, () => {
     });
 
     it('should fail due to internal server error', async () => {
-      const stub = sinon.stub(Users, 'getUser').throws(new Error());
+      const stub = sinon.stub(User, 'findByEmail').throws(new Error());
       const res = await chai.request(app)
         .post(signinUrl)
         .send({
-          email: adminEmail,
-          password: adminPassword
+          email: userEmail,
+          password: userPassword
         });
 
       expect(res.status).to.equal(500);

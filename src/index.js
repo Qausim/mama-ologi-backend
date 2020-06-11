@@ -1,12 +1,13 @@
 import http from 'http';
-
 import express from 'express';
 import bodyParser from 'body-parser';
 
 import router from './routes';
+import { getDebugger, debugHelper } from './utils/debugUtils';
 
 
 const app = express();
+const debug = getDebugger('app');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -30,6 +31,6 @@ const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(app);
 
-server.listen(PORT, () => console.log(`Server listening on PORT: ${PORT}`));
+server.listen(PORT, () => debugHelper.success(debug, `Server listening on PORT: ${PORT}`));
 
 export default app;

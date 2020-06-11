@@ -1,8 +1,11 @@
 import fs from 'fs';
 
 import cloudinary from '../config/cloudinaryConfig';
+import { debugHelper, getDebugger } from '../utils/debugUtils';
+import { imageUploadError } from '../utils/constants';
 
 
+const debug = getDebugger('app:CloudinaryService');
 /**
  * Cleans a filename of it extension
  * @param {string} imageName
@@ -46,7 +49,8 @@ export default class CloudinaryService {
       request.body.images = images.map((image) => image.secure_url).concat(sparedImages);
       next();
     } catch (error) {
-      next(new Error('Error uploading images'));
+      debugHelper.error(debug, error);
+      next(new Error(imageUploadError));
     }
   }
 
