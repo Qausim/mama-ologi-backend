@@ -63,18 +63,19 @@ export default class Product {
    * @returns {array} products
    */
   static async getPaginatedList(page) {
-    const perPage = page * 10;
+    const pageEnd = page * 12;
     const { rows } = await dbConnection.dbConnect(
-      `SELECT id, title, price, weight, description, stock, discount, images[1]
-      FROM ${productTableName} WHERE deleted = false  OFFSET $1 LIMIT 10`,
-      [perPage - 10],
+      `SELECT id, title, price, weight, description, stock, discount, images[1], (
+        SELECT CEIL(COUNT(id)::NUMERIC / 12) page_count FROM ${productTableName} WHERE deleted = false
+      ) FROM ${productTableName} WHERE deleted = false  OFFSET $1 LIMIT 12;`,
+      [pageEnd - 12],
     );
 
     return rows;
   }
 
   /**
-   * Deletes a product from the db using its id
+   * Deletes a product from the db using its id`
    * @param {number} productId
    */
   static async deleteById(productId, images = []) {
