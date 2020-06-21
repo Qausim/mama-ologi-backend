@@ -75,7 +75,7 @@ export const createGetWishlistFunctionQuery = `
       SELECT ARRAY (
         SELECT row_to_json(w) FROM (
           SELECT product.id product_id, product.title product_title, product.price product_price,
-          product.stock product_stock, product.discount product_discount, product.weight product_weight
+          product.stock stock, product.discount discount, product.weight product_weight
           FROM ${wishlistTableName} user_wishes LEFT JOIN ${productTableName} product
           ON user_wishes.product_id=product.id WHERE user_wishes.owner_id=user_id
         ) AS w

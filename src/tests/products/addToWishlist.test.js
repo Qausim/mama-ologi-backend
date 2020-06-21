@@ -53,11 +53,11 @@ describe(`${productsUrl}/:productId/wishlist`, () => {
       const serverWish = res.body.data.find((wish) => wish.product_id == product.id);
       expect(serverWish).to.be.an('object').and.to.have.keys(
         'product_id', 'product_price', 'product_title',
-        'product_weight', 'product_discount', 'product_stock'
+        'product_weight', 'discount', 'stock'
       );
       expect(serverWish.product_title).to.equal(product.title);
-      expect(serverWish.product_stock).to.equal(product.stock);
-      expect(fixFloat(serverWish.product_discount)).to.equal(fixFloat(product.discount));
+      expect(serverWish.stock).to.equal(product.stock);
+      expect(fixFloat(serverWish.discount)).to.equal(fixFloat(product.discount));
       expect(fixFloat(serverWish.product_price)).to.equal(fixFloat(product.price));
       expect(fixFloat(serverWish.product_weight)).to.equal(fixFloat(product.weight));
     });

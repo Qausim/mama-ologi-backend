@@ -15,7 +15,9 @@ productRouter.post('/', AuthMiddleware.validateToken, multipartMiddleware,
 
 productRouter.get('/', ProductController.getProducts);
 
-productRouter.get('/:productId', ProductMiddleware.verifyProductExists, ProductController.getProduct);
+productRouter.get(
+  '/:productId', ProductMiddleware.verifyProductExists, ProductController.getProduct,
+);
 
 productRouter.delete(
   '/:productId', AuthMiddleware.validateToken, ProductMiddleware.verifyProductExists,

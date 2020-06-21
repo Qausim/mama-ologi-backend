@@ -45,4 +45,5 @@ dbConnection.dbConnect(
     );
     return user.save();
   })
+  .then(() => { throw new Error(); })
   .catch((error) => debugHelper.error(debug, error));

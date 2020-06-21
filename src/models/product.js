@@ -47,13 +47,13 @@ export default class Product {
   static async findById(productId, method) {
     const query = method === 'get'
       ? `
-          SELECT p.*, users.first_name, users.last_name, users.phone
+          SELECT p.id, p.owner_id, p.title, p.price, p.weight, p.description, p.stock,
+          p.discount, p.images, users.first_name, users.last_name, users.phone
           FROM ${productTableName} p INNER JOIN ${userTableName}
           ON users.id = p.owner_id WHERE p.id = $1 AND p.deleted = false;
         `
       : `SELECT * FROM ${productTableName} WHERE id = $1`;
     const { rows: [res] } = await dbConnection.dbConnect(query, [productId]);
-    if (res) delete res.deleted;
     return res;
   }
 
@@ -147,9 +147,8 @@ export default class Product {
         owner_id, product_id, quantity
       ) VALUES (
         $1, $2, $3
-      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(
-        ${cartTableName}.quantity, excluded.quantity
-        ) RETURNING (SELECT get_cart($1) AS cart);
+      ) ON CONFLICT (product_id) DO UPDATE SET quantity=$3
+      RETURNING (SELECT get_cart($1) AS cart);
     `;
     const { rows: [{ cart }] } = await dbConnection.dbConnect(query, [userId, productId, quantity]);
     return cart;
