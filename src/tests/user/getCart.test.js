@@ -46,8 +46,8 @@ describe(`GET ${cartUrl}`, () => {
       const firstInCart = res.body.data[0];
       if (firstInCart) {
         expect(firstInCart).to.be.an('object').and.to.have.keys(
-          'quantity', 'product_title', 'product_price',
-          'product_id', 'total_price', 'product_weight', 'total_weight'
+          'quantity', 'total_price', 'total_weight', 'stock', 'discount',
+        'product_id', 'product_price', 'product_title', 'product_weight'
         );
         Object.keys(firstInCart).forEach((key) => {
           expect(firstInCart[key]).to.equal(dbCart[0][key]);

@@ -4,7 +4,7 @@ import { validationResult } from 'express-validator';
 import Responses from '../utils/responseUtils';
 import CloudinaryService from '../services/cloudinaryService';
 import {
-  createProductValidations, updateProductValidations, wishlistValidation,
+  createProductValidations, updateProductValidations, cartValidation,
 } from '../validation/productValidation';
 import { extractValidationErrors } from '../utils/errorUtils';
 import {
@@ -161,9 +161,9 @@ export default class ProductMiddleware {
    * Validates data for a wishlist operation
    * @returns {array}
    */
-  static validateWishlistData() {
+  static validateCartData() {
     return [
-      wishlistValidation.quantity,
+      cartValidation.quantity,
       (request, response, next) => {
         const errors = validationResult(request);
         if (!errors.isEmpty()) {

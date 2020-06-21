@@ -15,6 +15,12 @@ import Product from '../../models/product';
 
 const fixFloat = (num) => parseFloat(num).toFixed(2);
 
+const getProductDiscountedPriceTotal = (product, quantity) => {
+  const productPrice = parseFloat(product.price);
+  return (productPrice - (productPrice * product.discount)) * quantity;
+};
+
+
 chai.use(chaiHttp);
 const { expect } = chai;
 const v1Url = `/api/v1`;
@@ -47,23 +53,25 @@ describe(`${productsUrl}/:productId/cart`, () => {
         .set('Authorization', `Bearer ${user.token}`)
         .send({ quantity });
       
-        expect(res.status).to.equal(200);
-        expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
-        expect(res.body.status).to.equal('success');
-        expect(res.body.data).to.be.an('array').and.to.not.be.empty;
-        const serverWish = res.body.data.find((wish) => wish.product_id == product.id);
-        expect(serverWish).to.be.an('object').and.to.have.keys(
-        'quantity', 'total_price', 'total_weight',
+      expect(res.status).to.equal(200);
+      expect(res.body).to.be.an('object').and.to.have.keys('status', 'data');
+      expect(res.body.status).to.equal('success');
+      expect(res.body.data).to.be.an('array').and.to.not.be.empty;
+      const serverWish = res.body.data.find((wish) => wish.product_id == product.id);
+      expect(serverWish).to.be.an('object').and.to.have.keys(
+        'quantity', 'total_price', 'total_weight', 'stock', 'discount',
         'product_id', 'product_price', 'product_title', 'product_weight'
       );
       expect(serverWish.quantity).to.equal(quantity);
+      expect(serverWish.stock).to.equal(product.stock);
       expect(serverWish.product_title).to.equal(product.title);
+      expect(fixFloat(serverWish.discount)).to.equal(fixFloat(product.discount));
       expect(fixFloat(serverWish.product_weight)).to.equal(fixFloat(product.weight));
-      expect(fixFloat(serverWish.total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
       expect(fixFloat(serverWish.total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
+      expect(fixFloat(serverWish.total_price)).to.equal(fixFloat(getProductDiscountedPriceTotal(product, quantity)));
     });
     
-    it('should add update product quantity to maximum in user\'s cart', async () => {
+    it('should update product quantity to maximum in user\'s cart', async () => {
       const quantity = 4;
       const res = await chai.request(app)
         .post(`${productsUrl}/${product.id}/cart`)
@@ -76,14 +84,16 @@ describe(`${productsUrl}/:productId/cart`, () => {
       expect(res.body.data).to.be.an('array').and.to.not.be.empty;
       const serverWish = res.body.data.find((wish) => wish.product_id == product.id);
       expect(serverWish).to.be.an('object').and.to.have.keys(
-        'quantity', 'total_price', 'total_weight',
+        'quantity', 'total_price', 'total_weight', 'stock', 'discount',
         'product_id', 'product_price', 'product_title', 'product_weight'
       );
       expect(serverWish.quantity).to.equal(quantity);
+      expect(serverWish.stock).to.equal(product.stock);
       expect(serverWish.product_title).to.equal(product.title);
+      expect(fixFloat(serverWish.discount)).to.equal(fixFloat(product.discount));
       expect(fixFloat(serverWish.product_weight)).to.equal(fixFloat(product.weight));
-      expect(fixFloat(serverWish.total_price)).to.equal(fixFloat(parseFloat(product.price) * quantity));
       expect(fixFloat(serverWish.total_weight)).to.equal(fixFloat(parseFloat(product.weight) * quantity));
+      expect(fixFloat(serverWish.total_price)).to.equal(fixFloat(getProductDiscountedPriceTotal(product, quantity)));
     });
   });
 
@@ -154,4 +164,4 @@ describe(`${productsUrl}/:productId/cart`, () => {
       expect(res.body.error.message).to.equal(internalServerError);
     });
   });
-})
+});

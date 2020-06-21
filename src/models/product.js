@@ -100,22 +100,20 @@ export default class Product {
    * Inserts a product into the user's wishlist or updates the quantity if more
    * @param {number} userId
    * @param {number} productId
-   * @param {number} quantity
    * @return {array} wishlist
    */
-  static async addToWishList(userId, productId, quantity) {
+  static async addToWishList(userId, productId) {
     const query = `
       INSERT INTO ${wishlistTableName} (
-        owner_id, product_id, quantity
+        owner_id, product_id
       ) VALUES (
-        $1, $2, $3
-      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(
-        ${wishlistTableName}.quantity, excluded.quantity
-      ) RETURNING (SELECT get_wishlist($1) AS wishlist);
+        $1, $2
+      ) ON CONFLICT (product_id) DO UPDATE SET product_id=excluded.product_id
+      RETURNING (SELECT get_wishlist($1) AS wishlist);
     `;
 
     const { rows: [{ wishlist }] } = await dbConnection
-      .dbConnect(query, [userId, productId, quantity]);
+      .dbConnect(query, [userId, productId]);
     return wishlist;
   }
 

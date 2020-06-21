@@ -51,13 +51,15 @@ describe(`DELETE ${deleteFromWishlistBaseUrl}`, () => {
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('array').and.to.have.length(1);
       expect(res.body.data[0]).to.be.an('object').and.to.have.keys(
-        'quantity', 'total_price', 'total_weight',
-        'product_id', 'product_price', 'product_title', 'product_weight'
+        'product_id', 'product_price', 'product_title',
+        'product_weight', 'product_discount', 'product_stock'
       );
       expect(res.body.data[0].product_id).to.equal(parseInt(products[1].id));
       expect(res.body.data[0].product_title).to.equal(products[1].title);
+      expect(res.body.data[0].product_stock).to.equal(products[1].stock);
       expect(fixFloat(res.body.data[0].product_price)).to.equal(products[1].price);
       expect(fixFloat(res.body.data[0].product_weight)).to.equal(products[1].weight);
+      expect(fixFloat(res.body.data[0].product_discount, 10)).to.equal(products[1].discount);
     });
   });
 

@@ -43,6 +43,6 @@ export const updateProductValidations = {
     .withMessage(productDiscountValidationError),
 };
 
-export const wishlistValidation = {
+export const cartValidation = {
   quantity: body('quantity').isInt().withMessage(quantityValidationError),
 };

@@ -118,9 +118,9 @@ export default class ProductController {
    * @param {function} next
    */
   static async addToWishlist(request, response, next) {
-    const { user: { userId }, params: { productId }, body: { quantity } } = request;
+    const { user: { userId }, params: { productId } } = request;
     try {
-      const wishlist = await Product.addToWishList(userId, productId, quantity);
+      const wishlist = await Product.addToWishList(userId, productId);
       return Responses.success(response, wishlist, 200);
     } catch (error) {
       debugHelper.error(debug, error);
