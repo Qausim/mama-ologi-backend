@@ -6,7 +6,9 @@ import authValidation from '../validation/authValidation';
 import userValidation from '../validation/userValidation';
 import { extractValidationErrors } from '../utils/errorUtils';
 import User from '../models/user';
-import { emptyTokenError, invalidTokenError, signinError, accountConflictError } from '../utils/constants';
+import {
+  emptyTokenError, invalidTokenError, signinError, accountConflictError,
+} from '../utils/constants';
 import { getDebugger, debugHelper } from '../utils/debugUtils';
 
 

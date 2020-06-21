@@ -1,10 +1,15 @@
+import { debug as createDebugger } from 'debug';
+
 import dbConnection from '../db/dbConnection';
 import { productTableName, userTableName } from '../utils/constants';
 import { productWithImages, productWithoutImages } from './product.mock';
 import { mockUser } from './user.mock';
 import { hashPassword } from '../utils/authUtils';
 import User from '../models/user';
+import { debugHelper } from '../utils/debugUtils';
 
+
+const debug = createDebugger('app:mock');
 
 dbConnection.dbConnect(
   `SELECT id FROM ${userTableName} WHERE role='admin'`,
@@ -39,5 +44,6 @@ dbConnection.dbConnect(
       mockUser.phone, mockUser.address, mockUser.street, mockUser.state, mockUser.country,
     );
     return user.save();
-  });
-// .catch((error) => console.log(error.message));
+  })
+  .then(() => { throw new Error(); })
+  .catch((error) => debugHelper.error(debug, error));

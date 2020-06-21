@@ -64,8 +64,7 @@ export const createWishlistQuery = `
   CREATE TABLE IF NOT EXISTS ${wishlistTableName} (
     id BIGSERIAL PRIMARY KEY NOT NULL,
     owner_id BIGINT REFERENCES ${userTableName} (id) NOT NULL,
-    product_id BIGINT REFERENCES ${productTableName} (id) UNIQUE NOT NULL,
-    quantity SMALLINT NOT NULL
+    product_id BIGINT REFERENCES ${productTableName} (id) UNIQUE NOT NULL
   );
 `;
 
@@ -75,10 +74,10 @@ export const createGetWishlistFunctionQuery = `
     BEGIN
       SELECT ARRAY (
         SELECT row_to_json(w) FROM (
-          SELECT user_wishes.quantity, product.id AS product_id, product.title AS product_title,
-          product.price AS product_price, product.price * user_wishes.quantity as total_price,
-          product.weight AS product_weight, product.weight * user_wishes.quantity as total_weight FROM ${wishlistTableName} AS user_wishes
-          LEFT JOIN ${productTableName} AS product ON user_wishes.product_id=product.id WHERE user_wishes.owner_id=user_id
+          SELECT product.id product_id, product.title product_title, product.price product_price,
+          product.stock stock, product.discount discount, product.weight product_weight
+          FROM ${wishlistTableName} user_wishes LEFT JOIN ${productTableName} product
+          ON user_wishes.product_id=product.id WHERE user_wishes.owner_id=user_id
         ) AS w
       ) INTO wishes;
       RETURN wishes;
@@ -97,17 +96,19 @@ export const createCartQuery = `
 
 export const createGetCartFunctionQuery = `
   CREATE OR REPLACE FUNCTION get_cart(user_id BIGINT) RETURNS json[] AS $cart$
-    DECLARE cart json[];
+    DECLARE carts json[];
     BEGIN
       SELECT ARRAY (
         SELECT row_to_json(c) FROM (
-          SELECT user_cart.quantity, product.id AS product_id, product.title AS product_title,
-          product.price AS product_price, product.price * user_cart.quantity as total_price,
-          product.weight AS product_weight, product.weight * user_cart.quantity as total_weight FROM ${cartTableName} AS user_cart
-          LEFT JOIN ${productTableName} AS product ON user_cart.product_id=product.id WHERE user_cart.owner_id=user_id
+          SELECT cart.quantity, product.id product_id, product.title product_title,
+          product.price product_price, product.discount, product.stock, (
+            (product.price - product.price * product.discount) * cart.quantity
+          ) total_price, product.weight product_weight, (product.weight * cart.quantity) total_weight
+          FROM ${cartTableName} cart LEFT JOIN ${productTableName} product
+          ON cart.product_id=product.id WHERE cart.owner_id=user_id
         ) AS c
-      ) INTO cart;
-      RETURN cart;
+      ) INTO carts;
+      RETURN carts;
     END;
   $cart$ LANGUAGE plpgsql;
 `;

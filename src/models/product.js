@@ -47,13 +47,13 @@ export default class Product {
   static async findById(productId, method) {
     const query = method === 'get'
       ? `
-          SELECT p.*, users.first_name, users.last_name, users.phone
+          SELECT p.id, p.owner_id, p.title, p.price, p.weight, p.description, p.stock,
+          p.discount, p.images, users.first_name, users.last_name, users.phone
           FROM ${productTableName} p INNER JOIN ${userTableName}
           ON users.id = p.owner_id WHERE p.id = $1 AND p.deleted = false;
         `
       : `SELECT * FROM ${productTableName} WHERE id = $1`;
     const { rows: [res] } = await dbConnection.dbConnect(query, [productId]);
-    if (res) delete res.deleted;
     return res;
   }
 
@@ -63,18 +63,19 @@ export default class Product {
    * @returns {array} products
    */
   static async getPaginatedList(page) {
-    const perPage = page * 10;
+    const pageEnd = page * 12;
     const { rows } = await dbConnection.dbConnect(
-      `SELECT id, title, price, weight, description, stock, discount, images[1]
-      FROM ${productTableName} WHERE deleted = false  OFFSET $1 LIMIT 10`,
-      [perPage - 10],
+      `SELECT id, title, price, weight, description, stock, discount, images[1], (
+        SELECT CEIL(COUNT(id)::NUMERIC / 12) page_count FROM ${productTableName} WHERE deleted = false
+      ) FROM ${productTableName} WHERE deleted = false  OFFSET $1 LIMIT 12;`,
+      [pageEnd - 12],
     );
 
     return rows;
   }
 
   /**
-   * Deletes a product from the db using its id
+   * Deletes a product from the db using its id`
    * @param {number} productId
    */
   static async deleteById(productId, images = []) {
@@ -99,22 +100,20 @@ export default class Product {
    * Inserts a product into the user's wishlist or updates the quantity if more
    * @param {number} userId
    * @param {number} productId
-   * @param {number} quantity
    * @return {array} wishlist
    */
-  static async addToWishList(userId, productId, quantity) {
+  static async addToWishList(userId, productId) {
     const query = `
       INSERT INTO ${wishlistTableName} (
-        owner_id, product_id, quantity
+        owner_id, product_id
       ) VALUES (
-        $1, $2, $3
-      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(
-        ${wishlistTableName}.quantity, excluded.quantity
-      ) RETURNING (SELECT get_wishlist($1) AS wishlist);
+        $1, $2
+      ) ON CONFLICT (product_id) DO UPDATE SET product_id=excluded.product_id
+      RETURNING (SELECT get_wishlist($1) AS wishlist);
     `;
 
     const { rows: [{ wishlist }] } = await dbConnection
-      .dbConnect(query, [userId, productId, quantity]);
+      .dbConnect(query, [userId, productId]);
     return wishlist;
   }
 
@@ -148,9 +147,8 @@ export default class Product {
         owner_id, product_id, quantity
       ) VALUES (
         $1, $2, $3
-      ) ON CONFLICT (product_id) DO UPDATE SET quantity=GREATEST(
-        ${cartTableName}.quantity, excluded.quantity
-        ) RETURNING (SELECT get_cart($1) AS cart);
+      ) ON CONFLICT (product_id) DO UPDATE SET quantity=$3
+      RETURNING (SELECT get_cart($1) AS cart);
     `;
     const { rows: [{ cart }] } = await dbConnection.dbConnect(query, [userId, productId, quantity]);
     return cart;

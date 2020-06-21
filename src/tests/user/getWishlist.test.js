@@ -46,8 +46,8 @@ describe(`GET ${wishlistUrl}`, () => {
       const firstWish = res.body.data[0];
       if (firstWish) {
         expect(firstWish).to.be.an('object').and.to.have.keys(
-          'quantity', 'product_title', 'product_price',
-          'product_id', 'total_price', 'product_weight', 'total_weight'
+          'product_id', 'product_title', 'product_price',
+          'stock', 'discount', 'product_weight'
         );
         Object.keys(firstWish).forEach((key) => {
           expect(firstWish[key]).to.equal(dbWishes[0][key]);

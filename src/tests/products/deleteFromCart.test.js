@@ -51,7 +51,7 @@ describe(`DELETE ${deleteFromCartBaseUrl}`, () => {
       expect(res.body.status).to.equal('success');
       expect(res.body.data).to.be.an('array').and.to.have.length(1);
       expect(res.body.data[0]).to.be.an('object').and.to.have.keys(
-        'quantity', 'total_price', 'total_weight',
+        'quantity', 'total_price', 'total_weight', 'stock', 'discount',
         'product_id', 'product_price', 'product_title', 'product_weight'
       );
       expect(res.body.data[0].product_id).to.equal(parseInt(products[1].id));

@@ -1,4 +1,5 @@
 import http from 'http';
+import morgan from 'morgan';
 import express from 'express';
 import bodyParser from 'body-parser';
 
@@ -8,6 +9,7 @@ import { getDebugger, debugHelper } from './utils/debugUtils';
 
 const app = express();
 const debug = getDebugger('app');
+app.use(morgan('tiny'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
