@@ -44,5 +44,5 @@ export const updateProductValidations = {
 };
 
 export const cartValidation = {
-  quantity: body('quantity').isInt().withMessage(quantityValidationError),
+  quantity: body('quantity').isInt({ min: 1 }).withMessage(quantityValidationError),
 };
